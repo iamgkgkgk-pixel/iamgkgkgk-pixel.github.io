@@ -1029,7 +1029,106 @@ const Scene3D = {
         group.userData.baseHeadPos = headGroup.position.clone();
     },
 
+    // 创建鸭子模型
+    _buildDuck(group, color) {
+        const bodyMat = new THREE.MeshLambertMaterial({ color: color || 0x88aaff });
+        const billMat = new THREE.MeshLambertMaterial({ color: 0xffaa00 });
+        const legMat  = new THREE.MeshLambertMaterial({ color: 0xffaa00 });
+        const eyeMat  = new THREE.MeshLambertMaterial({ color: 0x111111 });
+        const whiteMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+
+        // 身体 - 圆润椭球，尾部上翘
+        const bodyGeo = new THREE.SphereGeometry(0.22, 10, 8);
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.scale.set(1.0, 0.85, 1.3);
+        body.position.set(0, 0.26, 0);
+        body.castShadow = true;
+        group.add(body);
+
+        // 胸部白色斑块（关键识别特征）
+        const chestGeo = new THREE.SphereGeometry(0.14, 8, 8);
+        const chest = new THREE.Mesh(chestGeo, whiteMat);
+        chest.scale.set(0.9, 0.8, 0.5);
+        chest.position.set(0, 0.22, 0.2);
+        group.add(chest);
+
+        // 头部 - 圆润
+        const headGroup = new THREE.Group();
+        headGroup.position.set(0, 0.48, 0.22);
+        const headGeo = new THREE.SphereGeometry(0.14, 8, 8);
+        const head = new THREE.Mesh(headGeo, bodyMat);
+        head.castShadow = true;
+        headGroup.add(head);
+
+        // 扁平鸭嘴（关键识别特征）
+        const billGeo = new THREE.BoxGeometry(0.12, 0.04, 0.12);
+        const bill = new THREE.Mesh(billGeo, billMat);
+        bill.position.set(0, -0.02, 0.15);
+        headGroup.add(bill);
+
+        // 眼睛
+        const eyeGeo = new THREE.SphereGeometry(0.025, 6, 6);
+        [-0.07, 0.07].forEach(ex => {
+            const eye = new THREE.Mesh(eyeGeo, eyeMat);
+            eye.position.set(ex, 0.04, 0.1);
+            headGroup.add(eye);
+        });
+
+        group.add(headGroup);
+
+        // 翅膀
+        [-1, 1].forEach(side => {
+            const wingGeo = new THREE.SphereGeometry(0.1, 6, 6);
+            const wing = new THREE.Mesh(wingGeo, bodyMat);
+            wing.scale.set(0.45, 0.65, 1.1);
+            wing.position.set(side * 0.22, 0.28, 0);
+            group.add(wing);
+        });
+
+        // 尾羽 - 上翘（鸭子特征）
+        const tailGeo = new THREE.ConeGeometry(0.07, 0.18, 5);
+        const tail = new THREE.Mesh(tailGeo, bodyMat);
+        tail.rotation.x = -Math.PI / 2.5;
+        tail.position.set(0, 0.36, -0.22);
+        group.add(tail);
+
+        // 腿 - 橙黄色短腿
+        const legGeo = new THREE.CylinderGeometry(0.025, 0.02, 0.18, 5);
+        const leftLegGroup = new THREE.Group();
+        leftLegGroup.position.set(-0.07, 0.09, 0.02);
+        const leftLeg = new THREE.Mesh(legGeo, legMat);
+        leftLeg.position.y = -0.09;
+        leftLegGroup.add(leftLeg);
+        // 蹼足
+        const webGeo = new THREE.ConeGeometry(0.07, 0.04, 3);
+        const webL = new THREE.Mesh(webGeo, billMat);
+        webL.rotation.x = Math.PI / 2;
+        webL.position.set(0, -0.19, 0.03);
+        leftLegGroup.add(webL);
+        group.add(leftLegGroup);
+
+        const rightLegGroup = new THREE.Group();
+        rightLegGroup.position.set(0.07, 0.09, 0.02);
+        const rightLeg = new THREE.Mesh(legGeo, legMat);
+        rightLeg.position.y = -0.09;
+        rightLegGroup.add(rightLeg);
+        const webR = new THREE.Mesh(webGeo, billMat);
+        webR.rotation.x = Math.PI / 2;
+        webR.position.set(0, -0.19, 0.03);
+        rightLegGroup.add(webR);
+        group.add(rightLegGroup);
+
+        group.userData.parts = {
+            body, headGroup,
+            leftLeg: leftLegGroup, rightLeg: rightLegGroup,
+            tail
+        };
+        group.userData.baseHeadPos = headGroup.position.clone();
+        group.userData.baseBodyY = body.position.y;
+    },
+
     // 添加动物到场景
+
     addAnimalMesh(animal) {
         const animalData = ANIMALS_DATA[animal.type];
         if (!animalData) return;
@@ -1043,11 +1142,13 @@ const Scene3D = {
         // 根据动物类型构建对应模型
         switch (animal.type) {
             case 'chicken': this._buildChicken(group, animalData.color); break;
+            case 'duck':    this._buildDuck(group, animalData.color);    break;
             case 'sheep':   this._buildSheep(group, animalData.color);   break;
             case 'cow':     this._buildCow(group, animalData.color);     break;
             case 'pig':     this._buildPig(group, animalData.color);     break;
-            default:        this._buildSheep(group, animalData.color);   break;
+            default:        this._buildChicken(group, animalData.color); break;
         }
+
 
         // 产出标记
         if (animal.hasProduct) {
@@ -1055,15 +1156,17 @@ const Scene3D = {
             const markerMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
             const marker = new THREE.Mesh(markerGeo, markerMat);
             // 根据动物大小调整标记高度
-            const heights = { chicken: 1.2, sheep: 1.8, cow: 2.4, pig: 1.6 };
+            const heights = { chicken: 1.2, duck: 1.1, sheep: 1.8, cow: 2.4, pig: 1.6 };
+
             marker.position.y = heights[animal.type] || 1.8;
             marker.userData = { isProductMarker: true };
             group.add(marker);
         }
 
         // ===== 行为状态机初始化 =====
-        const speeds = { chicken: 2.0, sheep: 1.5, cow: 1.0, pig: 1.2 };
-        const stepFreqs = { chicken: 4.0, sheep: 2.0, cow: 1.5, pig: 2.5 };
+        const speeds = { chicken: 2.0, duck: 1.8, sheep: 1.5, cow: 1.0, pig: 1.2 };
+        const stepFreqs = { chicken: 4.0, duck: 3.5, sheep: 2.0, cow: 1.5, pig: 2.5 };
+
 
         group.userData.animalType = animal.type;
         group.userData.animPhase = Math.random() * Math.PI * 2;
@@ -1108,7 +1211,8 @@ const Scene3D = {
             const markerGeo = new THREE.SphereGeometry(0.2, 8, 8);
             const markerMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
             const marker = new THREE.Mesh(markerGeo, markerMat);
-            const heights = { chicken: 1.2, sheep: 1.8, cow: 2.4, pig: 1.6 };
+            const heights = { chicken: 1.2, duck: 1.1, sheep: 1.8, cow: 2.4, pig: 1.6 };
+
             marker.position.y = heights[mesh.userData.animalType] || 1.8;
             marker.userData = { isProductMarker: true };
             mesh.add(marker);
@@ -1319,11 +1423,13 @@ const Scene3D = {
                 const roll = Math.random();
                 const weights = {
                     chicken: { foraging: 0.35, wandering: 0.35, resting: 0.15, social: 0.15 },
+                    duck:    { foraging: 0.35, wandering: 0.35, resting: 0.15, social: 0.15 },
                     sheep:   { foraging: 0.40, wandering: 0.25, resting: 0.20, social: 0.15 },
                     cow:     { foraging: 0.45, wandering: 0.20, resting: 0.25, social: 0.10 },
                     pig:     { foraging: 0.40, wandering: 0.30, resting: 0.15, social: 0.15 }
                 };
-                const w = weights[ud.animalType] || weights.sheep;
+                const w = weights[ud.animalType] || weights.chicken;
+
                 if (roll < w.resting) {
                     ud.state = 'resting';
                     ud.stateTimer = 8 + Math.random() * 15;
@@ -1425,7 +1531,28 @@ const Scene3D = {
                     parts.body.position.y = ud.baseBodyY + (isWalking ? Math.abs(Math.sin(phase * Math.PI * 4)) * 0.03 : 0);
                 }
 
+            } else if (ud.animalType === 'duck') {
+                // 鸭子：摇摆步态 + 头部点动 + 尾羽上翘
+                const legSwing = isWalking ? Math.sin(phase * Math.PI * 2) * 0.6 : 0;
+                if (parts.leftLeg)  parts.leftLeg.rotation.x  = legSwing;
+                if (parts.rightLeg) parts.rightLeg.rotation.x = -legSwing;
+                // 身体左右摇摆（鸭子特征）
+                if (parts.body && isWalking) {
+                    parts.body.rotation.z = Math.sin(phase * Math.PI * 2) * 0.1;
+                }
+                // 头部点动
+                if (parts.headGroup) {
+                    const bob = isWalking ? Math.sin((phase + 0.5) * Math.PI * 2) * 0.05 : 0;
+                    parts.headGroup.position.z = ud.baseHeadPos.z + bob;
+                    parts.headGroup.rotation.x = ud.state === 'foraging' ? 0.25 : 0;
+                }
+                // 尾羽随步伐轻微抖动
+                if (parts.tail && isWalking) {
+                    parts.tail.rotation.y = Math.sin(phase * Math.PI * 4) * 0.15;
+                }
+
             } else if (ud.animalType === 'sheep') {
+
                 // 羊：四足对角步态
                 const legSwingRad = isWalking ? 0.45 : 0;
                 const d1 = Math.sin(phase * Math.PI * 2) * legSwingRad;
