@@ -476,22 +476,29 @@ const Scene3D = {
     
     // 创建生长中的作物
     createGrowingCrop(group, crop, scale, plot) {
-        // 茎
-        const stemGeo = new THREE.CylinderGeometry(0.05 * scale, 0.08 * scale, 0.8 * scale, 6);
-        const stemMat = new THREE.MeshLambertMaterial({ color: 0x44aa44 });
-        const stem = new THREE.Mesh(stemGeo, stemMat);
-        stem.position.y = 0.4 * scale;
-        stem.castShadow = true;
-        group.add(stem);
-        
-        // 叶子
-        const leafGeo = new THREE.SphereGeometry(0.3 * scale, 8, 8);
-        const leafMat = new THREE.MeshLambertMaterial({ color: crop.color });
-        const leaf = new THREE.Mesh(leafGeo, leafMat);
-        leaf.position.y = 0.8 * scale;
-        leaf.scale.y = 0.6;
-        leaf.castShadow = true;
-        group.add(leaf);
+        // 使用新植物外观系统
+        const stage = getCropStage(plot.growProgress, plot.state);
+        if (typeof PlantBuilder !== 'undefined') {
+            PlantBuilder.build(group, crop.id, stage);
+            // 设置随机摇摆相位
+            group.userData.swayPhase = Math.random() * Math.PI * 2;
+            group.userData.cropId = crop.id;
+        } else {
+            // 降级：通用幼苗
+            const stemGeo = new THREE.CylinderGeometry(0.05 * scale, 0.08 * scale, 0.8 * scale, 6);
+            const stemMat = new THREE.MeshLambertMaterial({ color: 0x44aa44 });
+            const stem = new THREE.Mesh(stemGeo, stemMat);
+            stem.position.y = 0.4 * scale;
+            stem.castShadow = true;
+            group.add(stem);
+            const leafGeo = new THREE.SphereGeometry(0.3 * scale, 8, 8);
+            const leafMat = new THREE.MeshLambertMaterial({ color: crop.color });
+            const leaf = new THREE.Mesh(leafGeo, leafMat);
+            leaf.position.y = 0.8 * scale;
+            leaf.scale.y = 0.6;
+            leaf.castShadow = true;
+            group.add(leaf);
+        }
         
         // 浇水效果
         if (plot.watered) {
@@ -504,34 +511,29 @@ const Scene3D = {
             }
         }
     },
+
     
     // 创建成熟作物
     createMatureCrop(group, crop, plot) {
-        // 茎
-        const stemGeo = new THREE.CylinderGeometry(0.06, 0.1, 1.2, 6);
-        const stemMat = new THREE.MeshLambertMaterial({ color: 0x44aa44 });
-        const stem = new THREE.Mesh(stemGeo, stemMat);
-        stem.position.y = 0.6;
-        stem.castShadow = true;
-        group.add(stem);
-        
-        // 果实/花朵
-        const fruitGeo = new THREE.SphereGeometry(0.4, 10, 10);
-        const fruitMat = new THREE.MeshLambertMaterial({ color: crop.color });
-        const fruit = new THREE.Mesh(fruitGeo, fruitMat);
-        fruit.position.y = 1.3;
-        fruit.castShadow = true;
-        group.add(fruit);
-        
-        // 叶子
-        for (let i = 0; i < 4; i++) {
-            const leafGeo = new THREE.SphereGeometry(0.25, 6, 6);
-            const leafMat = new THREE.MeshLambertMaterial({ color: 0x33aa33 });
-            const leaf = new THREE.Mesh(leafGeo, leafMat);
-            const angle = (i / 4) * Math.PI * 2;
-            leaf.position.set(Math.cos(angle) * 0.4, 0.8, Math.sin(angle) * 0.4);
-            leaf.scale.y = 0.4;
-            group.add(leaf);
+        // 使用新植物外观系统（阶段4=成熟）
+        if (typeof PlantBuilder !== 'undefined') {
+            PlantBuilder.build(group, crop.id, 4);
+            group.userData.swayPhase = Math.random() * Math.PI * 2;
+            group.userData.cropId = crop.id;
+        } else {
+            // 降级：通用成熟模型
+            const stemGeo = new THREE.CylinderGeometry(0.06, 0.1, 1.2, 6);
+            const stemMat = new THREE.MeshLambertMaterial({ color: 0x44aa44 });
+            const stem = new THREE.Mesh(stemGeo, stemMat);
+            stem.position.y = 0.6;
+            stem.castShadow = true;
+            group.add(stem);
+            const fruitGeo = new THREE.SphereGeometry(0.4, 10, 10);
+            const fruitMat = new THREE.MeshLambertMaterial({ color: crop.color });
+            const fruit = new THREE.Mesh(fruitGeo, fruitMat);
+            fruit.position.y = 1.3;
+            fruit.castShadow = true;
+            group.add(fruit);
         }
         
         // 完美品质光效
@@ -544,8 +546,10 @@ const Scene3D = {
         }
         
         // 成熟跳动动画标记
-        group.userData = { bouncing: true, bounceTime: Math.random() * Math.PI * 2 };
+        group.userData.bouncing = true;
+        group.userData.bounceTime = Math.random() * Math.PI * 2;
     },
+
     
     // ===== 动物外观构建系统 =====
 
@@ -1399,13 +1403,20 @@ const Scene3D = {
             });
         }
         
-        // 作物跳动动画
+        // 作物动画：随风摇摆 + 成熟跳动
         this.cropMeshes.forEach((mesh, i) => {
-            if (mesh && mesh.userData.bouncing) {
+            if (!mesh) return;
+            // 随风摇摆
+            if (typeof PlantAnimator !== 'undefined' && mesh.userData.cropId) {
+                PlantAnimator.updateSway(mesh, mesh.userData.cropId, time);
+            }
+            // 成熟跳动
+            if (mesh.userData.bouncing) {
                 mesh.userData.bounceTime += deltaTime * 2;
                 mesh.position.y = 0.3 + Math.sin(mesh.userData.bounceTime) * 0.05;
             }
         });
+
         
         // 动物行为状态机 + 四肢动画
         this.animalMeshes.forEach(mesh => {
