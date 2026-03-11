@@ -98,31 +98,23 @@ const Scene3D = {
     
     // 创建地形
     createTerrain() {
-        // 主地面
-        const groundGeo = new THREE.PlaneGeometry(60, 60, 20, 20);
-        const groundMat = new THREE.MeshLambertMaterial({ color: 0x5a8a3c });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        ground.receiveShadow = true;
-        this.scene.add(ground);
-        
-        // 路径
-        const pathGeo = new THREE.PlaneGeometry(2, 20);
-        const pathMat = new THREE.MeshLambertMaterial({ color: 0xc4a265 });
-        const path = new THREE.Mesh(pathGeo, pathMat);
-        path.rotation.x = -Math.PI / 2;
-        path.position.set(0, 0.01, 0);
-        this.scene.add(path);
-        
-        // 横向路径
-        const pathH = new THREE.Mesh(new THREE.PlaneGeometry(20, 2), pathMat);
-        pathH.rotation.x = -Math.PI / 2;
-        pathH.position.set(0, 0.01, 0);
-        this.scene.add(pathH);
-        
-        // 围栏
-        this.createFence();
+        // 使用美化模块创建多层次草地
+        if (typeof SceneBeautify !== 'undefined') {
+            SceneBeautify.createRichTerrain(this.scene);
+            SceneBeautify.createPaths(this.scene);
+            SceneBeautify.createBeautifulFence(this.scene);
+        } else {
+            // 降级：原始地面
+            const groundGeo = new THREE.PlaneGeometry(60, 60, 20, 20);
+            const groundMat = new THREE.MeshLambertMaterial({ color: 0x5a8a3c });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            this.scene.add(ground);
+            this.createFence();
+        }
     },
+
     
     // 创建围栏
     createFence() {
@@ -193,33 +185,30 @@ const Scene3D = {
             group.position.set(pos[0], 0, pos[1]);
             group.userData = { plotId: i, type: 'plot' };
             
-            // 土地底座
-            const soilGeo = new THREE.BoxGeometry(3.5, 0.3, 3.5);
-            const soilMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-            const soil = new THREE.Mesh(soilGeo, soilMat);
-            soil.position.y = 0.15;
-            soil.receiveShadow = true;
-            soil.castShadow = true;
-            group.add(soil);
-            
-            // 土地边框
-            const borderGeo = new THREE.BoxGeometry(3.8, 0.1, 3.8);
-            const borderMat = new THREE.MeshLambertMaterial({ color: 0x5C3317 });
-            const border = new THREE.Mesh(borderGeo, borderMat);
-            border.position.y = 0.05;
-            group.add(border);
-            
-            // 土地编号标记（小石头）
-            const stoneGeo = new THREE.SphereGeometry(0.1, 6, 6);
-            const stoneMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
-            const stone = new THREE.Mesh(stoneGeo, stoneMat);
-            stone.position.set(1.5, 0.35, 1.5);
-            group.add(stone);
+            // 使用美化模块创建土地
+            if (typeof SceneBeautify !== 'undefined') {
+                SceneBeautify.createBeautifulPlot(group, i);
+            } else {
+                const soilGeo = new THREE.BoxGeometry(3.5, 0.3, 3.5);
+                const soilMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+                const soil = new THREE.Mesh(soilGeo, soilMat);
+                soil.position.y = 0.15;
+                soil.receiveShadow = true;
+                soil.castShadow = true;
+                group.add(soil);
+                group.userData.soilMesh = soil;
+                const borderGeo = new THREE.BoxGeometry(3.8, 0.1, 3.8);
+                const borderMat = new THREE.MeshLambertMaterial({ color: 0x5C3317 });
+                const border = new THREE.Mesh(borderGeo, borderMat);
+                border.position.y = 0.05;
+                group.add(border);
+            }
             
             this.scene.add(group);
             this.plotMeshes.push(group);
             this.cropMeshes.push(null);
         });
+
     },
     
     // 创建装饰物
@@ -234,16 +223,21 @@ const Scene3D = {
         const treePositions = [[-10, 5], [-10, -2], [10, 5], [10, -2], [-7, 10], [7, 10], [-7, -10], [7, -10]];
         treePositions.forEach(([x, z]) => this.createTree(x, z));
         
-        // 水井
-        this.createWell(9, 9);
-        
-        // 花朵装饰
-        for (let i = 0; i < 20; i++) {
-            const x = (Math.random() - 0.5) * 20 + (Math.random() > 0.5 ? 10 : -10);
-            const z = (Math.random() - 0.5) * 20;
-            this.createFlower(x, z);
+        // 使用美化模块添加地面装饰、农场道具、氛围粒子
+        if (typeof SceneBeautify !== 'undefined') {
+            SceneBeautify.createGroundDecorations(this.scene);
+            SceneBeautify.createFarmProps(this.scene);
+            SceneBeautify.createAtmosphereParticles(this.scene);
+        } else {
+            // 降级：原始花朵
+            for (let i = 0; i < 20; i++) {
+                const x = (Math.random() - 0.5) * 20 + (Math.random() > 0.5 ? 10 : -10);
+                const z = (Math.random() - 0.5) * 20;
+                this.createFlower(x, z);
+            }
         }
     },
+
     
     // 创建谷仓
     createBarn(x, z) {
@@ -1256,7 +1250,15 @@ const Scene3D = {
         const plot = this.plotMeshes[plotId];
         if (!plot) return;
         
+        // 土地颜色变深（湿润效果）
+        if (typeof SceneBeautify !== 'undefined') {
+            SceneBeautify.updatePlotWater(plot, true);
+            // 30秒后渐变恢复干燥
+            plot.userData.waterTimer = 30;
+        }
+        
         for (let i = 0; i < 8; i++) {
+
             const geo = new THREE.SphereGeometry(0.06, 6, 6);
             const mat = new THREE.MeshLambertMaterial({ color: 0x4488ff, transparent: true, opacity: 0.8 });
             const drop = new THREE.Mesh(geo, mat);
@@ -1403,8 +1405,14 @@ const Scene3D = {
             });
         }
         
+        // 氛围粒子动画（蝴蝶/蜜蜂/花瓣）
+        if (typeof SceneBeautify !== 'undefined') {
+            SceneBeautify.updateParticles(deltaTime, time);
+        }
+
         // 作物动画：随风摇摆 + 成熟跳动
         this.cropMeshes.forEach((mesh, i) => {
+
             if (!mesh) return;
             // 随风摇摆
             if (typeof PlantAnimator !== 'undefined' && mesh.userData.cropId) {
@@ -1637,8 +1645,21 @@ const Scene3D = {
         });
 
         
+        // 浇水土地颜色渐变恢复
+        if (typeof SceneBeautify !== 'undefined') {
+            this.plotMeshes.forEach(plot => {
+                if (plot.userData.waterTimer > 0) {
+                    plot.userData.waterTimer -= deltaTime;
+                    if (plot.userData.waterTimer <= 0) {
+                        SceneBeautify.updatePlotWater(plot, false);
+                    }
+                }
+            });
+        }
+
         // 粒子更新
         for (let i = this.particles.length - 1; i >= 0; i--) {
+
             const p = this.particles[i];
             p.userData.life -= deltaTime * 1.5;
             p.position.add(p.userData.velocity.clone().multiplyScalar(deltaTime));
