@@ -44,6 +44,10 @@ const Scene3D = {
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        // 扩大远裁面，确保远景层可见
+        this.camera.far = 300;
+        this.camera.updateProjectionMatrix();
+
         
         // 光照
         this.setupLighting();
@@ -60,7 +64,13 @@ const Scene3D = {
         // 创建天空
         this.createSky();
         
+        // 天地融合：远景层、地平线云雾、飞鸟
+        if (typeof SceneHorizon !== 'undefined') {
+            SceneHorizon.init(this.scene);
+        }
+        
         // 事件监听
+
         this.setupEvents();
         
         // 窗口大小变化
@@ -1688,7 +1698,13 @@ const Scene3D = {
             0.98 * skyBrightness
         );
         this.ambientLight.intensity = 0.3 + skyBrightness * 0.5;
+
+        // 天地融合动画更新（雾色同步、云朵飘移、飞鸟飞行）
+        if (typeof SceneHorizon !== 'undefined') {
+            SceneHorizon.update(this.scene, deltaTime, time, skyBrightness);
+        }
     },
+
     
     // 渲染
     render() {
