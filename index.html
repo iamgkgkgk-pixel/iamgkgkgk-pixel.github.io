@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>田园时光 - 3D农场养成游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: #1a0a00; 
+            font-family: 'Microsoft YaHei', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+        #gameCanvas { display: block; width: 100vw; height: 100vh; }
+        
+        /* HUD顶部栏 */
+        #hud-top {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: 60px; background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+            display: flex; align-items: center; padding: 0 15px; gap: 15px; z-index: 100;
+        }
+        .hud-stat {
+            display: flex; align-items: center; gap: 5px;
+            background: rgba(0,0,0,0.5); border-radius: 20px;
+            padding: 5px 12px; border: 1px solid rgba(255,255,255,0.2);
+        }
+        .hud-stat .icon { font-size: 18px; }
+        .hud-stat .value { color: #fff; font-size: 14px; font-weight: bold; }
+        .hud-stat .label { color: #aaa; font-size: 11px; }
+        
+        /* 等级进度条 */
+        #level-bar {
+            position: fixed; top: 65px; left: 15px;
+            background: rgba(0,0,0,0.6); border-radius: 10px;
+            padding: 8px 12px; z-index: 100; min-width: 200px;
+            border: 1px solid rgba(255,200,0,0.3);
+        }
+        #level-bar .level-info { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        #level-bar .level-num { color: #ffd700; font-size: 14px; font-weight: bold; }
+        #level-bar .level-title { color: #aaa; font-size: 12px; }
+        #xp-bar-bg { background: rgba(255,255,255,0.1); border-radius: 5px; height: 8px; }
+        #xp-bar { background: linear-gradient(90deg, #4CAF50, #8BC34A); border-radius: 5px; height: 8px; transition: width 0.5s; }
+        #xp-text { color: #aaa; font-size: 11px; margin-top: 3px; text-align: right; }
+        
+        /* 底部工具栏 */
+        #toolbar {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 8px; z-index: 100;
+        }
+        .tool-btn {
+            width: 60px; height: 60px; border-radius: 12px;
+            background: rgba(0,0,0,0.7); border: 2px solid rgba(255,255,255,0.2);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.2s; color: white;
+        }
+        .tool-btn:hover { border-color: #4CAF50; transform: translateY(-3px); background: rgba(76,175,80,0.3); }
+        .tool-btn.active { border-color: #ffd700; background: rgba(255,215,0,0.2); }
+        .tool-btn .tool-icon { font-size: 24px; }
+        .tool-btn .tool-name { font-size: 10px; color: #aaa; margin-top: 2px; }
+        
+        /* 右侧面板按钮 */
+        #side-btns {
+            position: fixed; right: 15px; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 10px; z-index: 100;
+        }
+        .side-btn {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: rgba(0,0,0,0.7); border: 2px solid rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 22px; transition: all 0.2s;
+        }
+        .side-btn:hover { border-color: #4CAF50; transform: scale(1.1); }
+        
+        /* 弹窗通用样式 */
+        .modal {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7); z-index: 200;
+            display: flex; align-items: center; justify-content: center;
+            display: none;
+        }
+        .modal.show { display: flex; }
+        .modal-box {
+            background: linear-gradient(135deg, #1a2a1a, #0d1a0d);
+            border: 2px solid #4CAF50; border-radius: 16px;
+            padding: 20px; min-width: 320px; max-width: 90vw; max-height: 85vh;
+            overflow-y: auto; color: white;
+        }
+        .modal-title {
+            font-size: 20px; font-weight: bold; color: #4CAF50;
+            margin-bottom: 15px; text-align: center;
+            border-bottom: 1px solid rgba(76,175,80,0.3); padding-bottom: 10px;
+        }
+        .modal-close {
+            position: absolute; top: 15px; right: 15px;
+            background: rgba(255,0,0,0.3); border: none; color: white;
+            width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+            font-size: 16px; display: flex; align-items: center; justify-content: center;
+        }
+        
+        /* 商店 */
+        .shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .shop-item {
+            background: rgba(255,255,255,0.05); border-radius: 10px;
+            padding: 12px; text-align: center; cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s;
+        }
+        .shop-item:hover { border-color: #4CAF50; background: rgba(76,175,80,0.1); }
+        .shop-item .item-icon { font-size: 32px; margin-bottom: 5px; }
+        .shop-item .item-name { font-size: 12px; color: #ddd; }
+        .shop-item .item-price { font-size: 13px; color: #ffd700; margin-top: 3px; }
+        .shop-item .item-time { font-size: 11px; color: #aaa; }
+        .shop-item .item-locked { font-size: 11px; color: #f44336; }
+        
+        /* 背包 */
+        .inventory-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .inv-slot {
+            background: rgba(255,255,255,0.05); border-radius: 8px;
+            padding: 8px; text-align: center; cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1); min-height: 70px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .inv-slot:hover { border-color: #4CAF50; }
+        .inv-slot .slot-icon { font-size: 24px; }
+        .inv-slot .slot-name { font-size: 10px; color: #aaa; margin-top: 3px; }
+        .inv-slot .slot-count { font-size: 12px; color: #ffd700; }
+        
+        /* 任务面板 */
+        .quest-item {
+            background: rgba(255,255,255,0.05); border-radius: 10px;
+            padding: 12px; margin-bottom: 10px;
+            border-left: 3px solid #4CAF50;
+        }
+        .quest-item .quest-name { font-size: 14px; color: #ddd; font-weight: bold; }
+        .quest-item .quest-desc { font-size: 12px; color: #aaa; margin: 5px 0; }
+        .quest-progress-bg { background: rgba(255,255,255,0.1); border-radius: 5px; height: 6px; }
+        .quest-progress { background: #4CAF50; border-radius: 5px; height: 6px; transition: width 0.5s; }
+        .quest-reward { font-size: 12px; color: #ffd700; margin-top: 5px; }
+        
+        /* 成就面板 */
+        .achievement-item {
+            display: flex; align-items: center; gap: 12px;
+            background: rgba(255,255,255,0.05); border-radius: 10px;
+            padding: 12px; margin-bottom: 8px;
+        }
+        .achievement-item .ach-icon { font-size: 28px; }
+        .achievement-item .ach-info { flex: 1; }
+        .achievement-item .ach-name { font-size: 13px; color: #ddd; font-weight: bold; }
+        .achievement-item .ach-desc { font-size: 11px; color: #aaa; }
+        .achievement-item.unlocked { border-left: 3px solid #ffd700; }
+        .achievement-item.locked { opacity: 0.5; }
+        
+        /* 通知 */
+        #notifications {
+            position: fixed; top: 80px; right: 15px;
+            z-index: 300; display: flex; flex-direction: column; gap: 8px;
+        }
+        .notification {
+            background: rgba(0,0,0,0.85); border-radius: 10px;
+            padding: 10px 15px; color: white; font-size: 13px;
+            border-left: 3px solid #4CAF50; max-width: 250px;
+            animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 8px;
+        }
+        .notification.warning { border-left-color: #ff9800; }
+        .notification.error { border-left-color: #f44336; }
+        .notification.gold { border-left-color: #ffd700; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        
+        /* 土地操作菜单 */
+        #land-menu {
+            position: fixed; z-index: 150;
+            background: rgba(0,0,0,0.9); border-radius: 12px;
+            padding: 10px; border: 1px solid rgba(76,175,80,0.5);
+            display: none; min-width: 160px;
+        }
+        .land-action {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 12px; border-radius: 8px; cursor: pointer;
+            color: white; font-size: 13px; transition: background 0.2s;
+        }
+        .land-action:hover { background: rgba(76,175,80,0.2); }
+        .land-action .action-icon { font-size: 18px; }
+        
+        /* 动物操作菜单 */
+        #animal-menu {
+            position: fixed; z-index: 150;
+            background: rgba(0,0,0,0.9); border-radius: 12px;
+            padding: 10px; border: 1px solid rgba(255,165,0,0.5);
+            display: none; min-width: 160px;
+        }
+        
+        /* 加载界面 */
+        #loading {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, #0d2b0d, #1a4a1a);
+            z-index: 1000; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: white;
+        }
+        #loading h1 { font-size: 48px; color: #4CAF50; text-shadow: 0 0 20px rgba(76,175,80,0.5); margin-bottom: 10px; }
+        #loading p { color: #aaa; font-size: 16px; margin-bottom: 30px; }
+        #loading-bar-bg { width: 300px; height: 8px; background: rgba(255,255,255,0.1); border-radius: 5px; }
+        #loading-bar { height: 8px; background: linear-gradient(90deg, #4CAF50, #8BC34A); border-radius: 5px; width: 0%; transition: width 0.3s; }
+        #loading-text { color: #aaa; font-size: 13px; margin-top: 10px; }
+        
+        /* 签到面板 */
+        .checkin-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+        .checkin-day {
+            background: rgba(255,255,255,0.05); border-radius: 8px;
+            padding: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .checkin-day.done { border-color: #4CAF50; background: rgba(76,175,80,0.2); }
+        .checkin-day.today { border-color: #ffd700; background: rgba(255,215,0,0.1); }
+        .checkin-day .day-num { font-size: 11px; color: #aaa; }
+        .checkin-day .day-reward { font-size: 20px; }
+        .checkin-day .day-amount { font-size: 11px; color: #ffd700; }
+        
+        /* 天气显示 */
+        #weather-display {
+            position: fixed; top: 65px; right: 15px;
+            background: rgba(0,0,0,0.6); border-radius: 10px;
+            padding: 8px 12px; z-index: 100;
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex; align-items: center; gap: 8px;
+        }
+        #weather-icon { font-size: 24px; }
+        #weather-info { color: white; }
+        #weather-name { font-size: 13px; font-weight: bold; }
+        #weather-effect { font-size: 11px; color: #aaa; }
+        
+        /* 季节显示 */
+        #season-display {
+            position: fixed; top: 65px; left: 230px;
+            background: rgba(0,0,0,0.6); border-radius: 10px;
+            padding: 8px 12px; z-index: 100;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        #season-name { font-size: 13px; color: #ffd700; font-weight: bold; }
+        #season-day { font-size: 11px; color: #aaa; }
+        
+        /* 作物信息弹窗 */
+        #crop-info {
+            position: fixed; z-index: 150;
+            background: rgba(0,0,0,0.9); border-radius: 12px;
+            padding: 15px; border: 1px solid rgba(76,175,80,0.5);
+            display: none; min-width: 200px; color: white;
+        }
+        #crop-info .crop-name { font-size: 16px; font-weight: bold; color: #4CAF50; margin-bottom: 8px; }
+        #crop-info .crop-stage { font-size: 13px; color: #aaa; }
+        #crop-info .crop-progress-bg { background: rgba(255,255,255,0.1); border-radius: 5px; height: 8px; margin: 8px 0; }
+        #crop-info .crop-progress { background: #4CAF50; border-radius: 5px; height: 8px; }
+        #crop-info .crop-time { font-size: 12px; color: #aaa; }
+        
+        /* 按钮样式 */
+        .btn-primary {
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            border: none; color: white; padding: 10px 20px;
+            border-radius: 8px; cursor: pointer; font-size: 14px;
+            transition: all 0.2s; font-family: inherit;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(76,175,80,0.4); }
+        .btn-gold {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            border: none; color: white; padding: 10px 20px;
+            border-radius: 8px; cursor: pointer; font-size: 14px;
+            transition: all 0.2s; font-family: inherit;
+        }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,215,0,0.4); }
+        
+        /* 标签页 */
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+        .tab-btn {
+            padding: 6px 14px; border-radius: 8px; cursor: pointer;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: #aaa; font-size: 13px; transition: all 0.2s; font-family: inherit;
+        }
+        .tab-btn.active { background: rgba(76,175,80,0.3); border-color: #4CAF50; color: white; }
+        
+        /* 能量条 */
+        #energy-bar {
+            position: fixed; bottom: 95px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.6); border-radius: 20px;
+            padding: 5px 15px; z-index: 100; display: flex; align-items: center; gap: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        #energy-icon { font-size: 16px; }
+        #energy-bar-bg { width: 120px; height: 8px; background: rgba(255,255,255,0.1); border-radius: 5px; }
+        #energy-fill { height: 8px; background: linear-gradient(90deg, #ff9800, #ffd700); border-radius: 5px; transition: width 0.5s; }
+        #energy-text { color: #ffd700; font-size: 12px; font-weight: bold; }
+        
+        /* 动物卡片 */
+        .animal-card {
+            background: rgba(255,255,255,0.05); border-radius: 10px;
+            padding: 12px; margin-bottom: 10px; display: flex; gap: 12px;
+            border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: all 0.2s;
+        }
+        .animal-card:hover { border-color: #ff9800; background: rgba(255,165,0,0.1); }
+        .animal-card .animal-icon { font-size: 36px; }
+        .animal-card .animal-info { flex: 1; }
+        .animal-card .animal-name { font-size: 14px; color: #ddd; font-weight: bold; }
+        .animal-card .animal-type { font-size: 11px; color: #aaa; }
+        .animal-card .animal-mood { font-size: 12px; margin-top: 5px; }
+        .mood-bar-bg { background: rgba(255,255,255,0.1); border-radius: 5px; height: 5px; margin-top: 3px; }
+        .mood-bar { background: #ff9800; border-radius: 5px; height: 5px; }
+        
+        /* 排行榜 */
+        .rank-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px; border-radius: 8px; margin-bottom: 8px;
+            background: rgba(255,255,255,0.05);
+        }
+        .rank-num { font-size: 18px; font-weight: bold; width: 30px; text-align: center; }
+        .rank-num.gold { color: #ffd700; }
+        .rank-num.silver { color: #c0c0c0; }
+        .rank-num.bronze { color: #cd7f32; }
+        .rank-avatar { font-size: 28px; }
+        .rank-info { flex: 1; }
+        .rank-name { font-size: 13px; color: #ddd; }
+        .rank-score { font-size: 12px; color: #aaa; }
+        .rank-badge { font-size: 20px; }
+        
+        /* 悬浮提示 */
+        #tooltip {
+            position: fixed; z-index: 500;
+            background: rgba(0,0,0,0.9); border-radius: 8px;
+            padding: 8px 12px; color: white; font-size: 12px;
+            pointer-events: none; display: none; max-width: 200px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        /* 金色收获特效 */
+        #golden-harvest {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 400; text-align: center; display: none;
+            animation: goldenPop 2s ease forwards;
+        }
+        #golden-harvest .golden-text { font-size: 48px; color: #ffd700; font-weight: bold; text-shadow: 0 0 30px rgba(255,215,0,0.8); }
+        #golden-harvest .golden-sub { font-size: 20px; color: #fff; margin-top: 10px; }
+        @keyframes goldenPop { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 20% { transform: translate(-50%,-50%) scale(1.2); opacity: 1; } 80% { transform: translate(-50%,-50%) scale(1); opacity: 1; } 100% { transform: translate(-50%,-50%) scale(0.8); opacity: 0; } }
+        
+        /* 升级特效 */
+        #level-up-effect {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 400; text-align: center; display: none;
+        }
+        #level-up-effect .levelup-text { font-size: 56px; color: #ffd700; font-weight: bold; text-shadow: 0 0 40px rgba(255,215,0,0.9); animation: levelUpAnim 3s ease forwards; }
+        @keyframes levelUpAnim { 0% { transform: scale(0) rotate(-10deg); opacity: 0; } 30% { transform: scale(1.3) rotate(5deg); opacity: 1; } 60% { transform: scale(1) rotate(0deg); opacity: 1; } 100% { transform: scale(0.5) translateY(-100px); opacity: 0; } }
+        
+        /* 滚动条美化 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+        ::-webkit-scrollbar-thumb { background: rgba(76,175,80,0.5); border-radius: 3px; }
+        
+        /* 响应式 */
+        @media (max-width: 600px) {
+            .tool-btn { width: 50px; height: 50px; }
+            .tool-btn .tool-icon { font-size: 20px; }
+            .shop-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载界面 -->
+    <div id="loading">
+        <h1>🌾 田园时光</h1>
+        <p>3D农场养成经营游戏</p>
+        <div id="loading-bar-bg"><div id="loading-bar"></div></div>
+        <div id="loading-text">正在加载游戏资源...</div>
+    </div>
+    
+    <!-- 3D画布 -->
+    <canvas id="gameCanvas"></canvas>
+    
+    <!-- 顶部HUD -->
+    <div id="hud-top">
+        <div class="hud-stat">
+            <span class="icon">💰</span>
+            <div>
+                <div class="value" id="gold-display">1000</div>
+                <div class="label">金币</div>
+            </div>
+        </div>
+        <div class="hud-stat">
+            <span class="icon">💎</span>
+            <div>
+                <div class="value" id="diamond-display">50</div>
+                <div class="label">钻石</div>
+            </div>
+        </div>
+        <div class="hud-stat" id="streak-stat">
+            <span class="icon">🔥</span>
+            <div>
+                <div class="value" id="streak-display">0</div>
+                <div class="label">连续天数</div>
+            </div>
+        </div>
+        <div style="flex:1"></div>
+        <div class="hud-stat" style="cursor:pointer" onclick="showModal('checkin-modal')">
+            <span class="icon">📅</span>
+            <div>
+                <div class="value">签到</div>
+                <div class="label">每日奖励</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 等级进度条 -->
+    <div id="level-bar">
+        <div class="level-info">
+            <span class="level-num">Lv.<span id="level-num">1</span></span>
+            <span class="level-title" id="level-title">新手农夫</span>
+        </div>
+        <div id="xp-bar-bg"><div id="xp-bar" style="width:0%"></div></div>
+        <div id="xp-text">0 / 100 XP</div>
+    </div>
+    
+    <!-- 天气显示 -->
+    <div id="weather-display">
+        <div id="weather-icon">☀️</div>
+        <div id="weather-info">
+            <div id="weather-name">晴天</div>
+            <div id="weather-effect">作物生长+20%</div>
+        </div>
+    </div>
+    
+    <!-- 季节显示 -->
+    <div id="season-display">
+        <div id="season-name">🌸 春季</div>
+        <div id="season-day">第1天</div>
+    </div>
+    
+    <!-- 能量条 -->
+    <div id="energy-bar">
+        <div id="energy-icon">⚡</div>
+        <div id="energy-bar-bg"><div id="energy-fill" style="width:100%"></div></div>
+        <div id="energy-text">100/100</div>
+    </div>
+    
+    <!-- 底部工具栏 -->
+    <div id="toolbar">
+        <div class="tool-btn active" id="tool-seed" onclick="selectTool('seed')">
+            <div class="tool-icon">🌱</div>
+            <div class="tool-name">播种</div>
+        </div>
+        <div class="tool-btn" id="tool-water" onclick="selectTool('water')">
+            <div class="tool-icon">💧</div>
+            <div class="tool-name">浇水</div>
+        </div>
+        <div class="tool-btn" id="tool-fertilize" onclick="selectTool('fertilize')">
+            <div class="tool-icon">🌿</div>
+            <div class="tool-name">施肥</div>
+        </div>
+        <div class="tool-btn" id="tool-harvest" onclick="selectTool('harvest')">
+            <div class="tool-icon">🌾</div>
+            <div class="tool-name">收获</div>
+        </div>
+        <div class="tool-btn" id="tool-feed" onclick="selectTool('feed')">
+            <div class="tool-icon">🥕</div>
+            <div class="tool-name">喂食</div>
+        </div>
+        <div class="tool-btn" id="tool-build" onclick="selectTool('build')">
+            <div class="tool-icon">🏗️</div>
+            <div class="tool-name">建造</div>
+        </div>
+    </div>
+    
+    <!-- 右侧按钮 -->
+    <div id="side-btns">
+        <div class="side-btn" onclick="showModal('shop-modal')" title="商店">🏪</div>
+        <div class="side-btn" onclick="showModal('inventory-modal')" title="背包">🎒</div>
+        <div class="side-btn" onclick="showModal('quest-modal')" title="任务">📋</div>
+        <div class="side-btn" onclick="showModal('achievement-modal')" title="成就">🏆</div>
+        <div class="side-btn" onclick="showModal('animal-modal')" title="动物">🐄</div>
+        <div class="side-btn" onclick="showModal('rank-modal')" title="排行榜">📊</div>
+    </div>
+    
+    <!-- 通知区域 -->
+    <div id="notifications"></div>
+    
+    <!-- 土地操作菜单 -->
+    <div id="land-menu">
+        <div class="land-action" id="action-plant" onclick="doLandAction('plant')">
+            <span class="action-icon">🌱</span> 种植作物
+        </div>
+        <div class="land-action" id="action-water" onclick="doLandAction('water')">
+            <span class="action-icon">💧</span> 浇水
+        </div>
+        <div class="land-action" id="action-fertilize" onclick="doLandAction('fertilize')">
+            <span class="action-icon">🌿</span> 施肥
+        </div>
+        <div class="land-action" id="action-harvest" onclick="doLandAction('harvest')">
+            <span class="action-icon">🌾</span> 收获
+        </div>
+        <div class="land-action" id="action-upgrade" onclick="doLandAction('upgrade')">
+            <span class="action-icon">⬆️</span> 升级土地
+        </div>
+    </div>
+    
+    <!-- 动物操作菜单 -->
+    <div id="animal-menu">
+        <div class="land-action" onclick="doAnimalAction('feed')">
+            <span class="action-icon">🥕</span> 喂食
+        </div>
+        <div class="land-action" onclick="doAnimalAction('pet')">
+            <span class="action-icon">🤝</span> 抚摸
+        </div>
+        <div class="land-action" onclick="doAnimalAction('collect')">
+            <span class="action-icon">🥚</span> 收集产出
+        </div>
+        <div class="land-action" onclick="doAnimalAction('rename')">
+            <span class="action-icon">✏️</span> 重命名
+        </div>
+    </div>
+    
+    <!-- 作物信息 -->
+    <div id="crop-info">
+        <div class="crop-name" id="crop-info-name">番茄</div>
+        <div class="crop-stage" id="crop-info-stage">生长阶段：幼苗</div>
+        <div class="crop-progress-bg"><div class="crop-progress" id="crop-info-progress" style="width:30%"></div></div>
+        <div class="crop-time" id="crop-info-time">还需 2小时30分</div>
+    </div>
+    
+    <!-- 商店弹窗 -->
+    <div class="modal" id="shop-modal">
+        <div class="modal-box" style="position:relative; width:500px;">
+            <button class="modal-close" onclick="hideModal('shop-modal')">✕</button>
+            <div class="modal-title">🏪 农场商店</div>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchShopTab('seeds')">🌱 种子</button>
+                <button class="tab-btn" onclick="switchShopTab('animals')">🐄 动物</button>
+                <button class="tab-btn" onclick="switchShopTab('tools')">🔧 工具</button>
+                <button class="tab-btn" onclick="switchShopTab('deco')">🏡 装饰</button>
+            </div>
+            <div id="shop-content" class="shop-grid"></div>
+        </div>
+    </div>
+    
+    <!-- 背包弹窗 -->
+    <div class="modal" id="inventory-modal">
+        <div class="modal-box" style="position:relative; width:420px;">
+            <button class="modal-close" onclick="hideModal('inventory-modal')">✕</button>
+            <div class="modal-title">🎒 我的背包</div>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchInvTab('seeds')">种子</button>
+                <button class="tab-btn" onclick="switchInvTab('harvest')">收获物</button>
+                <button class="tab-btn" onclick="switchInvTab('tools')">道具</button>
+            </div>
+            <div id="inventory-content" class="inventory-grid"></div>
+            <div style="margin-top:15px; text-align:center;">
+                <button class="btn-gold" onclick="sellAll()">💰 一键出售收获物</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 任务弹窗 -->
+    <div class="modal" id="quest-modal">
+        <div class="modal-box" style="position:relative; width:420px;">
+            <button class="modal-close" onclick="hideModal('quest-modal')">✕</button>
+            <div class="modal-title">📋 任务系统</div>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchQuestTab('daily')">每日任务</button>
+                <button class="tab-btn" onclick="switchQuestTab('weekly')">每周任务</button>
+                <button class="tab-btn" onclick="switchQuestTab('main')">主线任务</button>
+            </div>
+            <div id="quest-content"></div>
+        </div>
+    </div>
+    
+    <!-- 成就弹窗 -->
+    <div class="modal" id="achievement-modal">
+        <div class="modal-box" style="position:relative; width:420px;">
+            <button class="modal-close" onclick="hideModal('achievement-modal')">✕</button>
+            <div class="modal-title">🏆 成就系统</div>
+            <div id="achievement-content"></div>
+        </div>
+    </div>
+    
+    <!-- 动物管理弹窗 -->
+    <div class="modal" id="animal-modal">
+        <div class="modal-box" style="position:relative; width:420px;">
+            <button class="modal-close" onclick="hideModal('animal-modal')">✕</button>
+            <div class="modal-title">🐄 动物管理</div>
+            <div id="animal-content"></div>
+            <div style="margin-top:15px; text-align:center;">
+                <button class="btn-primary" onclick="showModal('shop-modal'); switchShopTab('animals'); hideModal('animal-modal')">购买新动物</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 排行榜弹窗 -->
+    <div class="modal" id="rank-modal">
+        <div class="modal-box" style="position:relative; width:380px;">
+            <button class="modal-close" onclick="hideModal('rank-modal')">✕</button>
+            <div class="modal-title">📊 排行榜</div>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchRankTab('week')">本周产值</button>
+                <button class="tab-btn" onclick="switchRankTab('level')">等级排名</button>
+                <button class="tab-btn" onclick="switchRankTab('collect')">收藏度</button>
+            </div>
+            <div id="rank-content"></div>
+        </div>
+    </div>
+    
+    <!-- 签到弹窗 -->
+    <div class="modal" id="checkin-modal">
+        <div class="modal-box" style="position:relative; width:420px;">
+            <button class="modal-close" onclick="hideModal('checkin-modal')">✕</button>
+            <div class="modal-title">📅 每日签到</div>
+            <p style="color:#aaa; font-size:13px; margin-bottom:15px; text-align:center;">连续签到获得更丰厚奖励！</p>
+            <div class="checkin-grid" id="checkin-grid"></div>
+            <div style="margin-top:15px; text-align:center;">
+                <button class="btn-primary" id="checkin-btn" onclick="doCheckin()">✅ 今日签到</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 种植选择弹窗 -->
+    <div class="modal" id="plant-modal">
+        <div class="modal-box" style="position:relative; width:420px;">
+            <button class="modal-close" onclick="hideModal('plant-modal')">✕</button>
+            <div class="modal-title">🌱 选择种植作物</div>
+            <div id="plant-content" class="shop-grid"></div>
+        </div>
+    </div>
+    
+    <!-- 金色收获特效 -->
+    <div id="golden-harvest">
+        <div class="golden-text">✨ 金色收获！✨</div>
+        <div class="golden-sub" id="golden-sub-text">产量 × 3</div>
+    </div>
+    
+    <!-- 升级特效 -->
+    <div id="level-up-effect">
+        <div class="levelup-text">🎉 升级了！</div>
+    </div>
+    
+    <!-- 悬浮提示 -->
+    <div id="tooltip"></div>
+
+    <!-- ══════════════ 广告系统 DOM ══════════════ -->
+
+    <!-- 横幅广告（底部） -->
+    <div id="ad-banner"></div>
+
+    <!-- 激励视频广告弹窗 -->
+    <div id="ad-rewarded">
+        <div class="ad-rewarded-box">
+            <div class="ad-rewarded-title">🎬 观看广告获得奖励</div>
+            <div class="ad-rewarded-desc">观看完整广告即可领取奖励</div>
+            <div class="ad-video-mock">📺</div>
+            <div id="ad-rewarded-bar-bg"><div id="ad-rewarded-bar"></div></div>
+            <div id="ad-rewarded-reward"></div>
+            <button id="ad-rewarded-close">领取奖励</button>
+            <button id="ad-rewarded-skip">✕ 放弃奖励</button>
+        </div>
+    </div>
+
+    <!-- 插屏广告弹窗 -->
+    <div id="ad-interstitial">
+        <div class="ad-interstitial-box">
+            <div class="ad-interstitial-content">
+                <span class="ad-tag">广告</span>
+                <span>🌾</span>
+                <p>感谢您支持田园时光！</p>
+                <p style="font-size:12px;color:#666">广告收益用于游戏持续更新</p>
+            </div>
+            <button id="ad-interstitial-close" disabled>跳过(5s)</button>
+        </div>
+    </div>
+
+    <!-- 激励广告入口按钮面板 -->
+    <div id="ad-reward-panel">
+        <div class="ad-reward-btn" onclick="AdSystem.showRewarded('energy')"
+             data-orig-label="能量 +30">
+            <span class="ad-btn-icon">⚡</span>
+            <span class="ad-btn-label">能量 +30</span>
+            <span class="ad-btn-ad">AD</span>
+        </div>
+        <div class="ad-reward-btn" onclick="AdSystem.showRewarded('gold')"
+             data-orig-label="金币 +500">
+            <span class="ad-btn-icon">💰</span>
+            <span class="ad-btn-label">金币 +500</span>
+            <span class="ad-btn-ad">AD</span>
+        </div>
+        <div class="ad-reward-btn" onclick="AdSystem.showRewarded('diamond')"
+             data-orig-label="钻石 +5">
+            <span class="ad-btn-icon">💎</span>
+            <span class="ad-btn-label">钻石 +5</span>
+            <span class="ad-btn-ad">AD</span>
+        </div>
+        <div class="ad-reward-btn" onclick="AdSystem.showRewarded('speedup')"
+             data-orig-label="加速卡 ×1">
+            <span class="ad-btn-icon">🚀</span>
+            <span class="ad-btn-label">加速卡 ×1</span>
+            <span class="ad-btn-ad">AD</span>
+        </div>
+    </div>
+    <!-- ══════════════ 广告系统 DOM 结束 ══════════════ -->
+
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- 游戏脚本 -->
+    <script src="js/gameData.js"></script>
+    <script src="js/gameState.js"></script>
+    <script src="js/scene3d.js"></script>
+    <script src="js/farmLogic.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/adSystem.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
+
