@@ -794,7 +794,7 @@ const Scene3D = {
         const udderMat = new THREE.MeshLambertMaterial({ color: 0xffb6c1 });
         const noseMat = new THREE.MeshLambertMaterial({ color: 0xffb6c1 });
 
-        // 身体 - 椭球形躯干，腹部下垂
+        // 身体 - 椭球形躯干
         const bodyGeo = new THREE.SphereGeometry(0.42, 12, 10);
         const body = new THREE.Mesh(bodyGeo, bodyMat);
         body.scale.set(1.45, 1.0, 2.1);
@@ -802,22 +802,8 @@ const Scene3D = {
         body.castShadow = true;
         group.add(body);
 
-        // 肩峰隆起 - 牛背部特征
-        const humpGeo = new THREE.SphereGeometry(0.28, 8, 8);
-        const hump = new THREE.Mesh(humpGeo, bodyMat);
-        hump.scale.set(1.1, 0.7, 1.2);
-        hump.position.set(0, 1.08, 0.45);
-        hump.castShadow = true;
-        group.add(hump);
-
-        // 腹部下垂
-        const bellyGeo = new THREE.SphereGeometry(0.32, 8, 8);
-        const belly = new THREE.Mesh(bellyGeo, bodyMat);
-        belly.scale.set(1.2, 0.6, 1.5);
-        belly.position.set(0, 0.42, 0);
-        group.add(belly);
-
         // 黑白斑块
+
         const spotPositions = [[0.28, 0.15, 0.3], [-0.22, 0.1, -0.2], [0.18, -0.05, 0.55]];
         spotPositions.forEach(([sx, sy, sz]) => {
             const sGeo = new THREE.SphereGeometry(0.2 + Math.random() * 0.1, 6, 6);
