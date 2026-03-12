@@ -231,14 +231,20 @@ const MAIN_QUESTS = [
     { id: 'main_5', name: '农业大亨', desc: '累计获得50000金币', target: 50000, reward: 5000, xp: 2000, type: 'gold', unlockLevel: 20 }
 ];
 
-// 天气数据
+// 天气数据（8种）
 const WEATHER_DATA = {
-    sunny: { name: '晴天', icon: '☀️', effect: '作物生长+20%', growBonus: 1.2, autoWater: false },
-    cloudy: { name: '多云', icon: '⛅', effect: '正常生长', growBonus: 1.0, autoWater: false },
-    rainy: { name: '雨天', icon: '🌧️', effect: '自动浇水', growBonus: 1.0, autoWater: true },
-    storm: { name: '暴风雨', icon: '⛈️', effect: '作物可能受损', growBonus: 0.8, autoWater: true, damage: true },
-    snow: { name: '下雪', icon: '❄️', effect: '作物生长-30%', growBonus: 0.7, autoWater: false }
+    sunny:        { name: '晴天',   icon: '☀️',  effect: '作物生长+20%', growBonus: 1.2, autoWater: false },
+    sunny_cloudy: { name: '晴间多云', icon: '⛅', effect: '正常生长',     growBonus: 1.0, autoWater: false },
+    cloudy:       { name: '多云',   icon: '☁️',  effect: '正常生长',     growBonus: 1.0, autoWater: false },
+    overcast:     { name: '阴天',   icon: '🌫️', effect: '生长-10%',     growBonus: 0.9, autoWater: false },
+    rainy:        { name: '小雨',   icon: '🌧️', effect: '自动浇水',     growBonus: 1.0, autoWater: true },
+    heavy_rain:   { name: '大雨',   icon: '⛈️', effect: '自动浇水+涝灾风险', growBonus: 0.9, autoWater: true, damage: true },
+    thunderstorm: { name: '雷暴',   icon: '⚡',  effect: '作物可能受损', growBonus: 0.8, autoWater: true, damage: true },
+    snow:         { name: '小雪',   icon: '🌨️', effect: '作物生长-30%', growBonus: 0.7, autoWater: false },
+    blizzard:     { name: '大雪',   icon: '❄️',  effect: '户外活动暂停', growBonus: 0.5, autoWater: false },
+    storm:        { name: '暴风雨', icon: '⛈️', effect: '作物可能受损', growBonus: 0.8, autoWater: true, damage: true }
 };
+
 
 // 季节数据
 const SEASONS_DATA = {

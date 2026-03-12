@@ -12,8 +12,18 @@ function showModal(id) {
         case 'animal-modal': renderAnimalPanel(); break;
         case 'rank-modal': renderRankboard('week'); break;
         case 'checkin-modal': renderCheckinGrid(); break;
+        case 'pokedex-modal': Pokedex.render('plant'); break;
+        case 'fishing-modal':
+            // 更新钓鱼统计
+            const fishToday = document.getElementById('fish-today');
+            const fishTotal = document.getElementById('fish-total');
+            if (fishToday) fishToday.textContent = FishingSystem.totalFishToday || 0;
+            if (fishTotal) fishTotal.textContent = GameState.player.totalFishCaught || 0;
+            break;
+
     }
 }
+
 
 // 隐藏弹窗
 function hideModal(id) {
@@ -40,15 +50,56 @@ function updateHUD() {
     // 更新排行榜中玩家数据
     MOCK_RANK_DATA[MOCK_RANK_DATA.length - 1].score = p.totalGoldEarned;
     MOCK_RANK_DATA[MOCK_RANK_DATA.length - 1].level = p.level;
+
+    // 签到小红点：今天还未签到
+    const todayStr = new Date().toDateString();
+    const checkinDot = document.getElementById('checkin-red-dot');
+    if (checkinDot) {
+        checkinDot.style.display = (p.lastCheckin !== todayStr) ? 'block' : 'none';
+    }
+
+    // 任务小红点：有已完成但未领取的任务
+    const questDot = document.getElementById('quest-red-dot');
+    if (questDot) {
+        const hasClaimable = [...Object.values(GameState.quests.daily || {}),
+                              ...Object.values(GameState.quests.weekly || {}),
+                              ...Object.values(GameState.quests.main || {})]
+            .some(q => q.completed && !q.claimed);
+        questDot.style.display = hasClaimable ? 'block' : 'none';
+    }
+
+    // 游戏时钟更新
+    const hour = GameState.gameTime.hour || 8;
+    const clockEl = document.getElementById('clock-time');
+    const clockIcon = document.getElementById('clock-icon');
+    const clockPeriod = document.getElementById('clock-period');
+    if (clockEl) {
+        clockEl.textContent = `${String(hour).padStart(2,'0')}:00`;
+    }
+    if (clockIcon) {
+        if (hour >= 5 && hour < 7)       clockIcon.textContent = '🌅';
+        else if (hour >= 7 && hour < 17) clockIcon.textContent = '🌞';
+        else if (hour >= 17 && hour < 19) clockIcon.textContent = '🌇';
+        else                              clockIcon.textContent = '🌙';
+    }
+    if (clockPeriod) {
+        if (hour >= 5 && hour < 12)       clockPeriod.textContent = '上午';
+        else if (hour >= 12 && hour < 18) clockPeriod.textContent = '下午';
+        else if (hour >= 18 && hour < 22) clockPeriod.textContent = '傍晚';
+        else                              clockPeriod.textContent = '深夜';
+    }
 }
+
+
 
 // 更新天气显示
 function updateWeatherDisplay() {
-    const weather = WEATHER_DATA[GameState.gameTime.weather];
+    const weather = WEATHER_DATA[GameState.gameTime.weather] || WEATHER_DATA['sunny'];
     document.getElementById('weather-icon').textContent = weather.icon;
     document.getElementById('weather-name').textContent = weather.name;
     document.getElementById('weather-effect').textContent = weather.effect;
 }
+
 
 // 更新季节显示
 function updateSeasonDisplay() {
@@ -205,12 +256,35 @@ function renderInventory(tab) {
     let items = [];
     
     if (tab === 'seeds') {
+        // 神秘种子袋区域
+        const bagTypes = ['normal', 'rare', 'legendary'];
+        let hasBag = false;
+        bagTypes.forEach(bagType => {
+            const count = GameState.inventory.seeds[`mystery_${bagType}`] || 0;
+            if (count > 0) {
+                hasBag = true;
+                const config = SEED_BAG_CONFIG[bagType];
+                const slot = document.createElement('div');
+                slot.className = 'inv-slot';
+                slot.style.cssText = `border-color:${config.borderColor};background:${config.bgColor}`;
+                slot.innerHTML = `
+                    <div class="slot-icon">${config.icon}</div>
+                    <div class="slot-name" style="color:${config.color}">${config.name}</div>
+                    <div class="slot-count">×${count}</div>
+                `;
+                slot.onclick = () => MysterySeeds.openBagUI(bagType);
+                content.appendChild(slot);
+            }
+        });
+        
+        // 普通种子
         Object.entries(GameState.inventory.seeds).forEach(([id, count]) => {
             if (count > 0 && CROPS_DATA[id]) {
                 items.push({ icon: CROPS_DATA[id].icon, name: CROPS_DATA[id].name, count });
             }
         });
     } else if (tab === 'harvest') {
+
         Object.entries(GameState.inventory.harvest).forEach(([key, count]) => {
             if (count <= 0) return;
             if (CROPS_DATA[key]) {
@@ -228,14 +302,21 @@ function renderInventory(tab) {
                 items.push({ icon: TOOLS_DATA[id].icon, name: TOOLS_DATA[id].name, count });
             }
         });
+        // 显示钓鱼碎片
+        const rareFrags = GameState.inventory.tools['rare_fragment'] || 0;
+        const legendFrags = GameState.inventory.tools['legend_fragment'] || 0;
+        if (rareFrags > 0) items.push({ icon: '🧩', name: '稀有碎片', count: rareFrags, hint: `${rareFrags}/10可合成` });
+        if (legendFrags > 0) items.push({ icon: '✨', name: '传说碎片', count: legendFrags, hint: `${legendFrags}/5可合成` });
     }
+
     
-    if (items.length === 0) {
+    if (items.length === 0 && content.children.length === 0) {
         content.innerHTML = '<div style="color:#aaa;text-align:center;padding:20px;grid-column:1/-1">暂无物品</div>';
         return;
     }
     
     items.forEach(item => {
+
         const slot = document.createElement('div');
         slot.className = 'inv-slot';
         slot.innerHTML = `

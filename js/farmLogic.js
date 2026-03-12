@@ -83,7 +83,15 @@ function showAnimalMenu(animalId, x, y) {
     menu.style.left = Math.min(x, window.innerWidth - 180) + 'px';
     menu.style.top = Math.min(y, window.innerHeight - 200) + 'px';
     menu.style.display = 'block';
+
+    // 羊才显示剪羊毛按鈕
+    const shearBtn = document.getElementById('action-shear');
+    if (shearBtn) {
+        const animal = GameState.animals.find(a => a.id === animalId);
+        shearBtn.style.display = (animal && animal.type === 'sheep') ? 'flex' : 'none';
+    }
 }
+
 
 // 显示作物信息
 function showCropInfo(plotId, x, y) {
@@ -133,19 +141,103 @@ function doLandAction(action) {
 function doAnimalAction(action) {
     hideAllMenus();
     switch(action) {
-        case 'feed': doFeedAnimal(currentAnimalId); break;
-        case 'pet': doPetAnimal(currentAnimalId); break;
+        case 'feed':    doFeedAnimal(currentAnimalId); break;
+        case 'pet':     doPetAnimal(currentAnimalId); break;
         case 'collect': doCollectAnimal(currentAnimalId); break;
-        case 'rename': doRenameAnimal(currentAnimalId); break;
+        case 'shear':   doShearSheep(currentAnimalId); break;
+        case 'rename':  doRenameAnimal(currentAnimalId); break;
     }
 }
+
+// 抚摸动物
+function doPetAnimal(animalId) {
+    const animal = GameState.animals.find(a => a.id === animalId);
+    if (!animal) return;
+    const mesh = Scene3D.animalMeshes.find(m => m.userData.animalId === animalId);
+    if (typeof AnimalBehavior !== 'undefined') {
+        AnimalBehavior.petAnimal(mesh, animal);
+    } else {
+        showNotification('💕 抚摸了动物！', 'gold');
+    }
+    GameState.save();
+}
+
+// 剪羊毛
+function doShearSheep(animalId) {
+    const animal = GameState.animals.find(a => a.id === animalId);
+    if (!animal || animal.type !== 'sheep') return;
+    const mesh = Scene3D.animalMeshes.find(m => m.userData.animalId === animalId);
+    if (typeof AnimalBehavior !== 'undefined') {
+        const success = AnimalBehavior.shearSheep(mesh, animal);
+        if (success) {
+            // 羊毛加入背包
+            GameState.inventory.harvest['wool'] = (GameState.inventory.harvest['wool'] || 0) + 1;
+            showNotification('✂️ 剪到了羊毛！🧶', 'gold');
+            GameState.addXP(10);
+            GameState.updateQuestProgress('collect');
+            GameState.save();
+        }
+    }
+}
+
 
 // 显示种植弹窗
 function showPlantModal(plotId) {
     currentPlotId = plotId;
+    
+    // 如果有待种植的神秘种子袋，直接种植
+    if (GameState.pendingMysteryBag) {
+        const bagType = GameState.pendingMysteryBag;
+        GameState.pendingMysteryBag = null;
+        MysterySeeds.plantMystery(plotId, bagType);
+        return;
+    }
+    
     const content = document.getElementById('plant-content');
     content.innerHTML = '';
+
     
+    // 神秘种子袋区域
+    const mysterySection = document.createElement('div');
+    mysterySection.style.cssText = 'margin-bottom:15px;padding:10px;background:rgba(255,215,0,0.05);border-radius:8px;border:1px solid rgba(255,215,0,0.2)';
+    mysterySection.innerHTML = '<div style="color:#FFD700;font-size:13px;margin-bottom:8px">🎒 神秘种子袋</div>';
+    
+    const bagTypes = ['normal', 'rare', 'legendary'];
+    let hasBag = false;
+    bagTypes.forEach(bagType => {
+        const count = GameState.inventory.seeds[`mystery_${bagType}`] || 0;
+        if (count > 0) {
+            hasBag = true;
+            const config = SEED_BAG_CONFIG[bagType];
+            const bagItem = document.createElement('div');
+            bagItem.className = 'shop-item';
+            bagItem.style.cssText = `border-color:${config.borderColor};background:${config.bgColor};display:inline-block;width:calc(33% - 5px);margin:2px`;
+            bagItem.innerHTML = `
+                <div class="item-icon">${config.icon}</div>
+                <div class="item-name" style="color:${config.color}">${config.name}</div>
+                <div class="item-price">库存: ${count}</div>
+            `;
+            bagItem.onclick = () => {
+                hideModal('plant-modal');
+                MysterySeeds.openBagUI(bagType, plotId);
+            };
+
+            mysterySection.appendChild(bagItem);
+        }
+    });
+    
+    if (hasBag) content.appendChild(mysterySection);
+    
+    // 普通种子区域
+    const normalTitle = document.createElement('div');
+    normalTitle.style.cssText = 'color:#aaa;font-size:13px;margin-bottom:8px';
+    normalTitle.textContent = '🌱 普通种子';
+    content.appendChild(normalTitle);
+    
+    const normalGrid = document.createElement('div');
+    normalGrid.className = 'shop-grid';
+    content.appendChild(normalGrid);
+
     Object.values(CROPS_DATA).forEach(crop => {
         const count = GameState.inventory.seeds[crop.id] || 0;
         const locked = GameState.player.level < crop.unlockLevel;
@@ -168,8 +260,9 @@ function showPlantModal(plotId) {
             item.style.opacity = '0.4';
         }
         
-        content.appendChild(item);
+        normalGrid.appendChild(item);
     });
+
     
     showModal('plant-modal');
 }
@@ -329,6 +422,15 @@ function doHarvest(plotId) {
     // 粒子特效
     Scene3D.createHarvestEffect(plotId, crop.color);
     
+    // 神秘种子揭晓
+    if (plot.isMystery && !plot.mysteryRevealed) {
+        MysterySeeds.revealMystery(plotId);
+    } else if (!plot.isMystery) {
+        // 普通种子也录入图鉴
+        Pokedex.unlock('plant', plot.crop, { cropId: plot.crop, rarity: crop.type, firstTime: Date.now() });
+    }
+
+    
     // 重置土地
     plot.state = 'empty';
     plot.crop = null;
@@ -471,9 +573,13 @@ function doFeedAnimal(animalId) {
     
     if (!GameState.spendEnergy(2)) return;
     
-    animal.fedToday = true;
-    animal.mood = Math.min(100, animal.mood + 20);
-    animal.intimacy = Math.min(100, animal.intimacy + 5);
+    // 集成AnimalBehavior喂食逻辑
+    if (typeof AnimalBehavior !== 'undefined') {
+        AnimalBehavior.feedAnimal(animal);
+    } else {
+        animal.fedToday = true;
+        animal.mood = Math.min(255, (animal.mood || 100) + 30);
+    }
     
     GameState.updateQuestProgress('feed');
     
@@ -482,24 +588,6 @@ function doFeedAnimal(animalId) {
     GameState.save();
 }
 
-// 抚摸动物
-function doPetAnimal(animalId) {
-    const animal = GameState.animals.find(a => a.id === animalId);
-    if (!animal) return;
-    
-    if (animal.pettedToday) {
-        showNotification('今天已经抚摸过了！', '🤝', 'warning');
-        return;
-    }
-    
-    animal.pettedToday = true;
-    animal.mood = Math.min(100, animal.mood + 15);
-    animal.intimacy = Math.min(100, animal.intimacy + 10);
-    
-    const animalData = ANIMALS_DATA[animal.type];
-    showNotification(`${animalData.icon} ${animal.name} 很喜欢你的抚摸！`, '❤️');
-    GameState.save();
-}
 
 // 收集动物产出
 function doCollectAnimal(animalId) {
@@ -625,13 +713,18 @@ function doCheckin() {
                 if (!GameState.inventory.seeds[s]) GameState.inventory.seeds[s] = 0;
                 GameState.inventory.seeds[s] += 3;
             });
+            // 额外赠送1个普通神秘种子袋
+            MysterySeeds.addBag('normal', 1);
             break;
         case 'rare_seed':
             ['strawberry', 'blueberry'].forEach(s => {
                 if (!GameState.inventory.seeds[s]) GameState.inventory.seeds[s] = 0;
                 GameState.inventory.seeds[s] += 1;
             });
+            // 额外赠送1个稀有神秘种子袋
+            MysterySeeds.addBag('rare', 1);
             break;
+
         case 'legend_pack':
             GameState.addGold(2000);
             GameState.addDiamond(50);

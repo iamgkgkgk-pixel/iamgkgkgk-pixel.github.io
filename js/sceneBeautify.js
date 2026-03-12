@@ -185,7 +185,8 @@ const SceneBeautify = {
     createBeautifulPlot(group, plotIndex) {
         // 基础土色 #795548
         const soilMat = new THREE.MeshLambertMaterial({ color: 0x795548 });
-        const soilGeo = new THREE.BoxGeometry(3.5, 0.28, 3.5);
+        const soilGeo = new THREE.BoxGeometry(3.0, 0.28, 3.0);
+
         const soil = new THREE.Mesh(soilGeo, soilMat);
         soil.position.y = 0.14;
         soil.receiveShadow = true;
@@ -250,6 +251,13 @@ const SceneBeautify = {
         }
     },
 
+    // 检查坐标是否在池塘区域内（含缓冲）
+    _isInPondArea(x, z, buffer = 1.0) {
+        const dx = (x - (-8)) / (4.0 + buffer);
+        const dz = (z - 8) / (3.0 + buffer);
+        return dx * dx + dz * dz <= 1.0;
+    },
+
     // ===== 5. 地面装饰物 =====
     createGroundDecorations(scene) {
         // 野花草丛（20-30簇）
@@ -257,6 +265,7 @@ const SceneBeautify = {
             const x = this._randPos();
             const z = this._randPos();
             if (Math.abs(x) < 7 && Math.abs(z) < 7) continue; // 避开农田区
+            if (this._isInPondArea(x, z)) continue; // 避开池塘区
             this._createFlowerCluster(scene, x, z);
         }
 
@@ -264,8 +273,10 @@ const SceneBeautify = {
         for (let i = 0; i < 20; i++) {
             const x = this._randPos();
             const z = this._randPos();
+            if (this._isInPondArea(x, z)) continue; // 避开池塘区
             this._createPebble(scene, x, z);
         }
+
 
         // 灌木丛（8-12个，边界处）
         const bushPositions = [
@@ -274,12 +285,12 @@ const SceneBeautify = {
         ];
         bushPositions.forEach(([x, z]) => this._createBush(scene, x, z));
 
-        // 蘑菇（5-8个，树下阴凉处）
-        const mushroomPos = [[-10, 4], [-10, -3], [10, 4], [10, -3], [-7, 9], [7, 9]];
+        // 蘑荇（5-8个，树下阴凉处）—— 避开池塘区域，[-7,9]和[7,9]落在池塘内，改为安全位置
+        const mushroomPos = [[-10, 4], [-10, -3], [10, 4], [10, -3], [-3, 10], [7, -9]];
         mushroomPos.forEach(([x, z]) => this._createMushroom(scene, x, z));
 
-        // 落叶堆（3-5处，树木周围）
-        const leafPos = [[-10, 5], [10, 5], [-7, 10], [7, 10]];
+        // 落叶堆（3-5处，树木周围）—— 避开池塘区域，[-7,10]落在池塘内，改为安全位置
+        const leafPos = [[-10, 5], [10, 5], [-3, 10], [7, -10]];
         leafPos.forEach(([x, z]) => this._createLeafPile(scene, x, z));
     },
 
@@ -393,10 +404,11 @@ const SceneBeautify = {
         // 水井（房屋侧方）
         this._createWell(scene, 8, 8);
 
-        // 干草垛（动物区旁，2-3垛）
-        this._createHayBale(scene, -8, 6);
-        this._createHayBale(scene, -8.8, 6.5);
-        this._createHayBale(scene, -8, 7.2);
+        // 干草垛（动物区旁，2-3垛）—— 移至池塘右侧安全区域
+        this._createHayBale(scene, -5, 4);
+        this._createHayBale(scene, -5.8, 4.5);
+        this._createHayBale(scene, -5, 5.2);
+
 
         // 木桶（房屋门口，3-5个）
         [-9.5, -8.8, -8.2, -9.2].forEach((bx, i) => {

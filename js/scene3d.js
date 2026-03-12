@@ -61,8 +61,20 @@ const Scene3D = {
         // 创建装饰物
         this.createDecorations();
         
+        // 创建池塘
+        if (typeof PondSystem !== 'undefined') {
+            PondSystem.init(this.scene);
+        }
+
+        // 初始化天气视觉系统
+        if (typeof WeatherSystem !== 'undefined') {
+            WeatherSystem.init(this.scene);
+        }
+
+        
         // 创建天空
         this.createSky();
+
         
         // 天地融合：远景层、地平线云雾、飞鸟
         if (typeof SceneHorizon !== 'undefined') {
@@ -184,11 +196,14 @@ const Scene3D = {
     
     // 创建农场土地（3x3布局）
     createPlots() {
+        // 地块布局：3行3列，间距5单位，土壤尺寸3.0，空隙2.0单位
         const plotPositions = [
             [-5, -5], [0, -5], [5, -5],
             [-5, 0],  [0, 0],  [5, 0],
             [-5, 5],  [0, 5],  [5, 5]
         ];
+
+
         
         plotPositions.forEach((pos, i) => {
             const group = new THREE.Group();
@@ -199,7 +214,8 @@ const Scene3D = {
             if (typeof SceneBeautify !== 'undefined') {
                 SceneBeautify.createBeautifulPlot(group, i);
             } else {
-                const soilGeo = new THREE.BoxGeometry(3.5, 0.3, 3.5);
+                const soilGeo = new THREE.BoxGeometry(3.0, 0.3, 3.0);
+
                 const soilMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
                 const soil = new THREE.Mesh(soilGeo, soilMat);
                 soil.position.y = 0.15;
@@ -207,7 +223,8 @@ const Scene3D = {
                 soil.castShadow = true;
                 group.add(soil);
                 group.userData.soilMesh = soil;
-                const borderGeo = new THREE.BoxGeometry(3.8, 0.1, 3.8);
+                const borderGeo = new THREE.BoxGeometry(3.3, 0.1, 3.3);
+
                 const borderMat = new THREE.MeshLambertMaterial({ color: 0x5C3317 });
                 const border = new THREE.Mesh(borderGeo, borderMat);
                 border.position.y = 0.05;
@@ -229,9 +246,10 @@ const Scene3D = {
         // 风车
         this.createWindmill(9, -9);
         
-        // 树木
-        const treePositions = [[-10, 5], [-10, -2], [10, 5], [10, -2], [-7, 10], [7, 10], [-7, -10], [7, -10]];
+        // 树木（避开池塘区域：中心(-8,8)，半轴4×3，[-7,10]和[7,10]落在池塘内，改为[-7,-10]镜像位置）
+        const treePositions = [[-10, 5], [-10, -2], [10, 5], [10, -2], [-3, 10], [7, 10], [-7, -10], [7, -10]];
         treePositions.forEach(([x, z]) => this.createTree(x, z));
+
         
         // 使用美化模块添加地面装饰、农场道具、氛围粒子
         if (typeof SceneBeautify !== 'undefined') {
@@ -1231,15 +1249,40 @@ const Scene3D = {
         if (!animalData) return;
 
         const group = new THREE.Group();
-        // 初始位置：沿外圈分布，确保不落在种植地块上
-        let initX, initZ;
-        let initAngle = (this.animalMeshes.length / 8) * Math.PI * 2;
-        for (let t = 0; t < 16; t++) {
-            initX = Math.cos(initAngle + t * Math.PI / 8) * 8;
-            initZ = Math.sin(initAngle + t * Math.PI / 8) * 8;
-            if (!this._isOnFarmPlot(initX, initZ)) break;
+        // 初始位置：螺旋扩散搜索，确保不落在种植地块/池塘上，且与已有动物不重叠
+        const _animalRadiusInit = { chicken: 0.5, duck: 0.5, sheep: 0.8, cow: 1.0, pig: 0.8 };
+        const myRadius = _animalRadiusInit[animal.type] || 0.6;
+        let initX = 0, initZ = 0;
+        let placed = false;
+        // 在多个候选半径上搜索，从近到远
+        const candidateRadii = [6, 7, 8, 9, 10, 5, 11];
+        outer: for (const r of candidateRadii) {
+            const steps = Math.max(12, Math.ceil(r * 2));
+            for (let t = 0; t < steps; t++) {
+                const angle = (t / steps) * Math.PI * 2 + (this.animalMeshes.length * 0.37);
+                const cx = Math.cos(angle) * r;
+                const cz = Math.sin(angle) * r;
+                // 不在障碍物上
+                if (this._isObstacle(cx, cz, animal.type)) continue;
+                // 不与已有动物重叠
+                let overlap = false;
+                for (const existing of this.animalMeshes) {
+                    const er = _animalRadiusInit[existing.userData.animalType] || 0.6;
+                    const minD = myRadius + er + 0.3; // 额外0.3间距
+                    const dx = cx - existing.position.x;
+                    const dz = cz - existing.position.z;
+                    if (dx * dx + dz * dz < minD * minD) { overlap = true; break; }
+                }
+                if (!overlap) { initX = cx; initZ = cz; placed = true; break outer; }
+            }
+        }
+        // 兜底：随机位置（极少情况）
+        if (!placed) {
+            initX = (Math.random() - 0.5) * 16;
+            initZ = (Math.random() - 0.5) * 16;
         }
         group.position.set(initX, 0, initZ);
+
 
         group.userData = { animalId: animal.id, type: 'animal' };
 
@@ -1286,7 +1329,10 @@ const Scene3D = {
         // 移动目标
         group.userData.targetX = group.position.x;
         group.userData.targetZ = group.position.z;
-        group.userData.moveTimer = 0;
+        // 初始moveTimer随机错开（0.5~3秒），避免所有动物同帧寻路触发碰撞
+        group.userData.moveTimer = 0.5 + Math.random() * 2.5;
+        group.userData.blockedCooldown = 0; // 碰撞冷却计时器
+
 
         // 朝向
         group.userData.facingAngle = Math.random() * Math.PI * 2;
@@ -1317,7 +1363,9 @@ const Scene3D = {
             [-5,  0], [0,  0], [5,  0],
             [-5,  5], [0,  5], [5,  5]
         ];
-        const halfSize = 1.75 + 0.65; // 地块半宽 + 安全边距（覆盖最大动物半径）
+
+        const halfSize = 1.5 + 0.65; // 地块半宽(3.0/2=1.5) + 安全边距（覆盖最大动物半径）
+
 
         for (const [px, pz] of plotPositions) {
             if (Math.abs(x - px) < halfSize && Math.abs(z - pz) < halfSize) {
@@ -1326,6 +1374,20 @@ const Scene3D = {
         }
         return false;
     },
+
+    /**
+     * 检测坐标是否为障碍区域（地块 + 池塘）
+     * animalType: 鸭子不受池塘限制
+     */
+    _isObstacle(x, z, animalType) {
+        if (this._isOnFarmPlot(x, z)) return true;
+        // 鸭子可以进入池塘
+        if (animalType === 'duck') return false;
+        // 其他动物检测池塘（含缓冲区）
+        if (typeof PondSystem !== 'undefined' && PondSystem.isInPond(x, z, POND_BUFFER)) return true;
+        return false;
+    },
+
 
     // 更新动物产出标记
 
@@ -1491,6 +1553,11 @@ const Scene3D = {
             return;
         }
         
+        // 检测钓鱼点点击
+        if (typeof PondSystem !== 'undefined') {
+            if (PondSystem.checkFishingSpotClick(raycaster)) return;
+        }
+
         // 检测动物点击
         const animalObjects = this.animalMeshes.map(g => g.children[0]);
         const animalIntersects = raycaster.intersectObjects(animalObjects);
@@ -1503,6 +1570,7 @@ const Scene3D = {
         
         // 关闭菜单
         hideAllMenus();
+
     },
     
     // 高亮土地
@@ -1539,6 +1607,12 @@ const Scene3D = {
             SceneBeautify.updateParticles(deltaTime, time);
         }
 
+        // 池塘系统更新（涟漪/鱼影/蜻蜓/青蛙）
+        if (typeof PondSystem !== 'undefined') {
+            PondSystem.update(deltaTime);
+        }
+
+
         // 作物动画：随风摇摆 + 成熟跳动
         this.cropMeshes.forEach((mesh, i) => {
 
@@ -1565,6 +1639,8 @@ const Scene3D = {
             // ---- 行为状态机 ----
             ud.stateTimer -= deltaTime;
             ud.moveTimer -= deltaTime;
+            if (ud.blockedCooldown > 0) ud.blockedCooldown -= deltaTime;
+
 
             if (ud.stateTimer <= 0) {
                 // 随机切换行为意图
@@ -1621,20 +1697,36 @@ const Scene3D = {
                 // 限制在围栏内
                 newX = Math.max(-10, Math.min(10, newX));
                 newZ = Math.max(-10, Math.min(10, newZ));
-                // 避开种植地块：若目标落在地块上则重新采样（最多10次，全部用全局随机保证有效）
+                // 鸭子特殊寻路：优先在池塘内游泳
+                if (ud.animalType === 'duck' && typeof PondSystem !== 'undefined') {
+                    const inPond = PondSystem.isInPond(mesh.position.x, mesh.position.z);
+                    // 60%概率在池塘内巡游（若已在水中）
+                    if (inPond && Math.random() < 0.6) {
+                        const pt = PondSystem.randomPointInPond();
+                        newX = pt.x; newZ = pt.z;
+                    }
+                    // 30%概率从陆地游向池塘
+                    else if (!inPond && Math.random() < 0.3) {
+                        const pt = PondSystem.randomPointInPond();
+                        newX = pt.x; newZ = pt.z;
+                    }
+                }
+
+                // 避开障碍物（地块 + 池塘）：若目标落在障碍上则重新采样（最多10次）
                 for (let attempt = 0; attempt < 10; attempt++) {
-                    if (!this._isOnFarmPlot(newX, newZ)) break;
+                    if (!this._isObstacle(newX, newZ, ud.animalType)) break;
                     // 全局随机重采样，确保能找到安全位置
                     newX = (Math.random() - 0.5) * 18;
                     newZ = (Math.random() - 0.5) * 18;
                     newX = Math.max(-10, Math.min(10, newX));
                     newZ = Math.max(-10, Math.min(10, newZ));
                 }
-                // 最终兜底：若仍在地块上，强制移到当前位置（原地等待）
-                if (this._isOnFarmPlot(newX, newZ)) {
+                // 最终兜底：若仍在障碍上，强制移到当前位置（原地等待）
+                if (this._isObstacle(newX, newZ, ud.animalType)) {
                     newX = mesh.position.x;
                     newZ = mesh.position.z;
                 }
+
                 ud.targetX = newX;
                 ud.targetZ = newZ;
 
@@ -1657,15 +1749,48 @@ const Scene3D = {
                     let nextX = mesh.position.x + moveX;
                     let nextZ = mesh.position.z + moveZ;
 
-                    // 若下一步踩入地块，则停止并重置目标
-                    if (this._isOnFarmPlot(nextX, nextZ)) {
+                    // 若下一步踩入障碍（地块/池塘），则停止并重置目标
+                    if (this._isObstacle(nextX, nextZ, ud.animalType)) {
                         ud.targetX = mesh.position.x;
                         ud.targetZ = mesh.position.z;
                         ud.moveTimer = 1 + Math.random() * 2;
                         actualSpeed = 0;
                     } else {
+                        const wasInPond = typeof PondSystem !== 'undefined' && PondSystem.isInPond(mesh.position.x, mesh.position.z);
+                        const willInPond = typeof PondSystem !== 'undefined' && PondSystem.isInPond(nextX, nextZ);
+
                         mesh.position.x = nextX;
                         mesh.position.z = nextZ;
+
+                        // 鸭子入水/出水处理
+                        if (ud.animalType === 'duck' && typeof PondSystem !== 'undefined') {
+                            if (!wasInPond && willInPond) {
+                                // 入水：产生涟漪，身体下沉
+                                PondSystem.createRipple(nextX, nextZ);
+                                ud.isSwimming = true;
+                                if (ud.parts && ud.parts.body) {
+                                    ud.parts.body.position.y = 0.08; // 下沉至水线
+                                }
+                                if (ud.parts && ud.parts.leftLeg) ud.parts.leftLeg.visible = false;
+                                if (ud.parts && ud.parts.rightLeg) ud.parts.rightLeg.visible = false;
+                            } else if (wasInPond && !willInPond) {
+                                // 出水：甩水效果，身体恢复
+                                ud.isSwimming = false;
+                                ud.shakeTimer = 1.0; // 甩水计时
+                                if (ud.parts && ud.parts.body) {
+                                    ud.parts.body.position.y = ud.baseBodyY || 0.26;
+                                }
+                                if (ud.parts && ud.parts.leftLeg) ud.parts.leftLeg.visible = true;
+                                if (ud.parts && ud.parts.rightLeg) ud.parts.rightLeg.visible = true;
+                            } else if (willInPond && actualSpeed > 0.01) {
+                                // 游泳中：产生划水尾波
+                                ud.wakeTimer = (ud.wakeTimer || 0) - deltaTime;
+                                if (ud.wakeTimer <= 0) {
+                                    PondSystem.createDuckWake(nextX, nextZ, ud.facingAngle);
+                                    ud.wakeTimer = 0.3;
+                                }
+                            }
+                        }
 
                         // 平滑转向
                         const targetAngle = Math.atan2(dx, dz);
@@ -1675,49 +1800,16 @@ const Scene3D = {
                         ud.facingAngle += angleDiff * Math.min(1, deltaTime * 5);
                         mesh.rotation.y = ud.facingAngle;
                     }
+
                 }
             }
 
-            // ---- 动物间碰撞分离 ----
-            const animalRadius = { chicken: 0.5, duck: 0.5, sheep: 0.8, cow: 1.0, pig: 0.8 };
-            const selfRadius = animalRadius[ud.animalType] || 0.6;
-            this.animalMeshes.forEach(other => {
-                if (other === mesh) return;
-                const otherRadius = animalRadius[other.userData.animalType] || 0.6;
-                const minDist = selfRadius + otherRadius;
-                const sepX = mesh.position.x - other.position.x;
-                const sepZ = mesh.position.z - other.position.z;
-                const sepDist = Math.sqrt(sepX * sepX + sepZ * sepZ);
-                if (sepDist > 0 && sepDist < minDist) {
-                    // 将两只动物各自推开一半
-                    const push = (minDist - sepDist) * 0.5;
-                    const nx = sepX / sepDist;
-                    const nz = sepZ / sepDist;
-                    mesh.position.x += nx * push;
-                    mesh.position.z += nz * push;
-                    other.position.x -= nx * push;
-                    other.position.z -= nz * push;
-                    // 推开后重新限制在围栏内
-                    mesh.position.x = Math.max(-10, Math.min(10, mesh.position.x));
-                    mesh.position.z = Math.max(-10, Math.min(10, mesh.position.z));
-                    other.position.x = Math.max(-10, Math.min(10, other.position.x));
-                    other.position.z = Math.max(-10, Math.min(10, other.position.z));
-                    // 推开后若落入地块，则回退到推开前的位置
-                    if (this._isOnFarmPlot(mesh.position.x, mesh.position.z)) {
-                        mesh.position.x -= nx * push;
-                        mesh.position.z -= nz * push;
-                    }
-                    if (this._isOnFarmPlot(other.position.x, other.position.z)) {
-                        other.position.x += nx * push;
-                        other.position.z += nz * push;
-                    }
-
-                }
-            });
-
-
             // ---- 四肢动画 ----
-            ud.animPhase += deltaTime * ud.stepFreq * (actualSpeed > 0 ? 1 : 0.1);
+            // resting状态下animPhase不累积，避免idle时四肢持续微动（抽搐）
+            if (ud.state !== 'resting') {
+                ud.animPhase += deltaTime * ud.stepFreq * (actualSpeed > 0 ? 1 : 0.05);
+            }
+
 
             const phase = ud.animPhase;
             const isWalking = actualSpeed > 0.05;
@@ -1746,24 +1838,54 @@ const Scene3D = {
                 }
 
             } else if (ud.animalType === 'duck') {
-                // 鸭子：摇摆步态 + 头部点动 + 尾羽上翘
-                const legSwing = isWalking ? Math.sin(phase * Math.PI * 2) * 0.6 : 0;
-                if (parts.leftLeg)  parts.leftLeg.rotation.x  = legSwing;
-                if (parts.rightLeg) parts.rightLeg.rotation.x = -legSwing;
-                // 身体左右摇摆（鸭子特征）
-                if (parts.body && isWalking) {
-                    parts.body.rotation.z = Math.sin(phase * Math.PI * 2) * 0.1;
+                // 鸭子：游泳模式 vs 陆地模式
+                if (ud.isSwimming) {
+                    // 游泳动画：身体前后点头，尾羽左右摆
+                    if (parts.body) {
+                        parts.body.position.y = 0.08 + Math.sin(phase * Math.PI * 4) * 0.015;
+                        parts.body.rotation.z = Math.sin(phase * Math.PI * 2) * 0.05;
+                    }
+                    if (parts.headGroup) {
+                        parts.headGroup.position.z = ud.baseHeadPos.z + Math.sin(phase * Math.PI * 4) * 0.03;
+                        parts.headGroup.rotation.x = 0;
+                    }
+                    if (parts.tail) {
+                        parts.tail.rotation.y = Math.sin(phase * Math.PI * 4) * 0.2;
+                    }
+                    // 游泳速度稍慢
+                    ud.walkSpeed = 1.2;
+                } else {
+                    // 甩水动画
+                    if (ud.shakeTimer > 0) {
+                        ud.shakeTimer -= deltaTime;
+                        if (parts.body) {
+                            parts.body.rotation.z = Math.sin(ud.shakeTimer * 20) * 0.25 * (ud.shakeTimer / 1.0);
+                        }
+                    } else {
+                        // 陆地行走动画
+                        const legSwing = isWalking ? Math.sin(phase * Math.PI * 2) * 0.6 : 0;
+                        if (parts.leftLeg)  parts.leftLeg.rotation.x  = legSwing;
+                        if (parts.rightLeg) parts.rightLeg.rotation.x = -legSwing;
+                        if (parts.body && isWalking) {
+                            parts.body.rotation.z = Math.sin(phase * Math.PI * 2) * 0.1;
+                        }
+                        if (parts.body) {
+                            parts.body.position.y = ud.baseBodyY || 0.26;
+                        }
+                        ud.walkSpeed = 1.8;
+                    }
+                    // 头部点动
+                    if (parts.headGroup) {
+                        const bob = isWalking ? Math.sin((phase + 0.5) * Math.PI * 2) * 0.05 : 0;
+                        parts.headGroup.position.z = ud.baseHeadPos.z + bob;
+                        parts.headGroup.rotation.x = ud.state === 'foraging' ? 0.25 : 0;
+                    }
+                    // 尾羽随步伐轻微抖动
+                    if (parts.tail && isWalking) {
+                        parts.tail.rotation.y = Math.sin(phase * Math.PI * 4) * 0.15;
+                    }
                 }
-                // 头部点动
-                if (parts.headGroup) {
-                    const bob = isWalking ? Math.sin((phase + 0.5) * Math.PI * 2) * 0.05 : 0;
-                    parts.headGroup.position.z = ud.baseHeadPos.z + bob;
-                    parts.headGroup.rotation.x = ud.state === 'foraging' ? 0.25 : 0;
-                }
-                // 尾羽随步伐轻微抖动
-                if (parts.tail && isWalking) {
-                    parts.tail.rotation.y = Math.sin(phase * Math.PI * 4) * 0.15;
-                }
+
 
             } else if (ud.animalType === 'sheep') {
 
@@ -1840,8 +1962,119 @@ const Scene3D = {
             }
         });
 
-        
+        // ---- 动物间碰撞检测（碰到其他动物时停止行走，不推搡）----
+        const _animalRadius = { chicken: 0.5, duck: 0.5, sheep: 0.8, cow: 1.0, pig: 0.8 };
+        const _meshes = this.animalMeshes;
+        // 先收集本帧需要停止的动物
+        const _blockedSet = new Set();
+        for (let ai = 0; ai < _meshes.length; ai++) {
+            const ma = _meshes[ai];
+            const ra = _animalRadius[ma.userData.animalType] || 0.6;
+            for (let bi = ai + 1; bi < _meshes.length; bi++) {
+                const mb = _meshes[bi];
+                const rb = _animalRadius[mb.userData.animalType] || 0.6;
+                const minDist = ra + rb;
+                const sepX = ma.position.x - mb.position.x;
+                const sepZ = ma.position.z - mb.position.z;
+                const sepDistSq = sepX * sepX + sepZ * sepZ;
+                if (sepDistSq < minDist * minDist) {
+                    // 两只动物重叠：都停止当前移动行为，切换为idle等待
+                    _blockedSet.add(ai);
+                    _blockedSet.add(bi);
+                }
+            }
+        }
+        // 对被阻挡的动物：扫描周围方向，找到空旷方向立即移动，解决聚集卡死问题
+        _blockedSet.forEach(idx => {
+            const mesh = _meshes[idx];
+            const ud = mesh.userData;
+            if (ud.state === 'resting') return;
+
+            // 只在冷却结束后才重新寻路，避免每帧反复触发
+            ud.blockedCooldown = (ud.blockedCooldown || 0);
+            if (ud.blockedCooldown > 0) return;
+
+            const ra = _animalRadius[ud.animalType] || 0.6;
+            const cx = mesh.position.x;
+            const cz = mesh.position.z;
+
+            // 扫描8个方向，统计每个方向的阻挡数量
+            const DIRS = 8;
+            const PROBE_DIST = (ra + 1.2); // 探测距离：自身半径 + 1.2
+            const dirBlocked = new Array(DIRS).fill(0);
+
+            for (let bi = 0; bi < _meshes.length; bi++) {
+                if (bi === idx) continue;
+                const mb = _meshes[bi];
+                const rb = _animalRadius[mb.userData.animalType] || 0.6;
+                const bx = mb.position.x - cx;
+                const bz = mb.position.z - cz;
+                const distSq = bx * bx + bz * bz;
+                const checkDist = ra + rb + 1.5;
+                if (distSq > checkDist * checkDist) continue; // 太远，不影响
+
+                // 计算这只动物在哪些方向上造成阻挡
+                const angle = Math.atan2(bz, bx); // -π ~ π
+                for (let d = 0; d < DIRS; d++) {
+                    const dirAngle = (d / DIRS) * Math.PI * 2;
+                    let diff = Math.abs(angle - dirAngle);
+                    if (diff > Math.PI) diff = Math.PI * 2 - diff;
+                    if (diff < Math.PI * 0.4) { // 约72度范围内算阻挡
+                        dirBlocked[d]++;
+                    }
+                }
+            }
+
+            // 找阻挡最少的方向（优先完全空旷的方向）
+            let bestDir = -1;
+            let minBlocked = Infinity;
+            // 加入随机偏移避免所有动物选同一方向
+            const startD = Math.floor(Math.random() * DIRS);
+            for (let d = 0; d < DIRS; d++) {
+                const dd = (d + startD) % DIRS;
+                if (dirBlocked[dd] < minBlocked) {
+                    minBlocked = dirBlocked[dd];
+                    bestDir = dd;
+                }
+            }
+
+            if (bestDir >= 0 && minBlocked < 3) {
+                // 找到相对空旷的方向，立即朝该方向移动
+                const escapeAngle = (bestDir / DIRS) * Math.PI * 2;
+                const escapeDist = 2.5 + Math.random() * 2.0; // 逃离距离
+                let newX = cx + Math.cos(escapeAngle) * escapeDist;
+                let newZ = cz + Math.sin(escapeAngle) * escapeDist;
+                // 限制在围栏内
+                newX = Math.max(-10, Math.min(10, newX));
+                newZ = Math.max(-10, Math.min(10, newZ));
+                // 确保目标不在障碍物上
+                if (!this._isObstacle(newX, newZ, ud.animalType)) {
+                    ud.targetX = newX;
+                    ud.targetZ = newZ;
+                    ud.moveTimer = 0; // 立即开始移动
+                    ud.blockedCooldown = 1.0 + Math.random() * 0.5;
+                } else {
+                    // 目标在障碍上，原地短暂等待
+                    ud.targetX = cx;
+                    ud.targetZ = cz;
+                    ud.moveTimer = 0.5 + Math.random() * 0.5;
+                    ud.blockedCooldown = ud.moveTimer;
+                }
+            } else {
+                // 四面都被堵死（极少情况），短暂等待后重试
+                ud.targetX = cx;
+                ud.targetZ = cz;
+                ud.moveTimer = 0.3 + Math.random() * 0.3;
+                ud.blockedCooldown = ud.moveTimer;
+            }
+        });
+
+
+
+
+
         // 浇水土地颜色渐变恢复
+
         if (typeof SceneBeautify !== 'undefined') {
             this.plotMeshes.forEach(plot => {
                 if (plot.userData.waterTimer > 0) {
@@ -1853,37 +2086,49 @@ const Scene3D = {
             });
         }
 
-        // 粒子更新
+        // 粒子更新（直接修改position，避免velocity.clone()每帧创建Vector3）
         for (let i = this.particles.length - 1; i >= 0; i--) {
-
             const p = this.particles[i];
+            const vel = p.userData.velocity;
             p.userData.life -= deltaTime * 1.5;
-            p.position.add(p.userData.velocity.clone().multiplyScalar(deltaTime));
-            p.userData.velocity.y -= 5 * deltaTime;
+            p.position.x += vel.x * deltaTime;
+            p.position.y += vel.y * deltaTime;
+            p.position.z += vel.z * deltaTime;
+            vel.y -= 5 * deltaTime;
             p.material.opacity = p.userData.life;
-            p.material.transparent = true;
             if (p.userData.life <= 0) {
                 this.scene.remove(p);
+                // dispose material释放GPU内存（geometry为共享，不dispose）
+                if (p.material) p.material.dispose();
                 this.particles.splice(i, 1);
             }
         }
+
         
         // 太阳光角度（昼夜变化）
-        const sunAngle = time * 0.05;
+        const hour = typeof GameState !== 'undefined' ? GameState.gameTime.hour : 12;
+        const sunAngle = (hour / 24) * Math.PI * 2 - Math.PI / 2;
         this.sunLight.position.set(
             Math.cos(sunAngle) * 30,
             Math.abs(Math.sin(sunAngle)) * 30 + 5,
             Math.sin(sunAngle) * 20
         );
-        
-        // 天空颜色变化
-        const skyBrightness = Math.max(0.3, Math.abs(Math.sin(sunAngle)));
-        this.scene.background = new THREE.Color(
-            0.53 * skyBrightness,
-            0.81 * skyBrightness,
-            0.98 * skyBrightness
-        );
-        this.ambientLight.intensity = 0.3 + skyBrightness * 0.5;
+        const skyBrightness = Math.max(0.15, Math.abs(Math.sin(sunAngle)));
+
+        // 天气视觉系统更新（昼夜光影 + 雨雪粒子）
+        if (typeof WeatherSystem !== 'undefined') {
+            WeatherSystem.update(deltaTime, time);
+            WeatherSystem.updateDayNight(this, hour, skyBrightness);
+        } else {
+            // 降级：原始天空颜色变化
+            this.scene.background = new THREE.Color(
+                0.53 * skyBrightness,
+                0.81 * skyBrightness,
+                0.98 * skyBrightness
+            );
+            this.ambientLight.intensity = 0.3 + skyBrightness * 0.5;
+        }
+
 
         // 天地融合动画更新（雾色同步、云朵飘移、飞鸟飞行）
         if (typeof SceneHorizon !== 'undefined') {

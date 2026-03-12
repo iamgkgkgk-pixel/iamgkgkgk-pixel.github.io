@@ -53,8 +53,12 @@ const GameState = {
         seasonDay: 1,
         weather: 'sunny',
         weatherTimer: 0,
-        lastUpdate: Date.now()
+        lastUpdate: Date.now(),
+        hour: 8,          // 游戏内小时（0-23）
+        hourTimer: 0,     // 小时推进计时器（每60秒=1游戏小时）
+        dayTimer: 0       // 天推进计时器
     },
+
     
     // 当前选中工具
     currentTool: 'seed',
@@ -70,6 +74,16 @@ const GameState = {
     
     // 能量恢复计时器
     energyTimer: 0,
+    
+    // 待种植的神秘种子袋类型
+    pendingMysteryBag: null,
+    
+    // 图鉴数据
+    pokedex: {},
+    
+    // 图鉴里程碑已领取
+    pokedexMilestones: new Set(),
+
     
     // 初始化
     init() {
@@ -91,8 +105,10 @@ const GameState = {
         // 初始化背包种子
         this.inventory.seeds = {
             radish: 5,
-            lettuce: 3
+            lettuce: 3,
+            mystery_normal: 2  // 新手赠送2个普通种子袋
         };
+
         
         // 初始化任务进度
         DAILY_QUESTS.forEach(q => {
@@ -121,8 +137,11 @@ const GameState = {
             inventory: this.inventory,
             quests: this.quests,
             achievements: [...this.achievements],
-            gameTime: this.gameTime
+            gameTime: this.gameTime,
+            pokedex: this.pokedex,
+            pokedexMilestones: [...(this.pokedexMilestones || new Set())]
         };
+
         try {
             localStorage.setItem('farm3d_save', JSON.stringify(saveData));
         } catch(e) {
@@ -146,7 +165,23 @@ const GameState = {
             if (data.inventory) this.inventory = data.inventory;
             if (data.quests) this.quests = data.quests;
             if (data.achievements) this.achievements = new Set(data.achievements);
-            if (data.gameTime) this.gameTime = data.gameTime;
+            if (data.gameTime) {
+                // 合并而非替换，保留新增字段的默认值
+                this.gameTime = {
+                    ...this.gameTime,
+                    ...data.gameTime,
+                    // 兼容旧存档：将旧天气名映射到新天气名
+                    weather: ({'storm':'thunderstorm','heavy_rain':'heavy_rain'}[data.gameTime.weather] || data.gameTime.weather || 'sunny')
+                };
+                // 确保新字段存在
+                if (this.gameTime.hour === undefined) this.gameTime.hour = 8;
+                if (this.gameTime.hourTimer === undefined) this.gameTime.hourTimer = 0;
+                if (this.gameTime.dayTimer === undefined) this.gameTime.dayTimer = 0;
+            }
+
+            if (data.pokedex) this.pokedex = data.pokedex;
+            if (data.pokedexMilestones) this.pokedexMilestones = new Set(data.pokedexMilestones);
+
             
             // 处理离线收益
             this.processOfflineProgress();
@@ -352,9 +387,10 @@ const GameState = {
     update(deltaTime) {
         const now = Date.now();
         
-        // 能量恢复（每6分钟恢复1点）
+        // 能量恢复（每72秒恢复1点，原6分钟提速5倍）
         this.energyTimer += deltaTime;
-        if (this.energyTimer >= 360) {
+        if (this.energyTimer >= 72) {
+
             this.energyTimer = 0;
             if (this.player.energy < this.player.maxEnergy) {
                 this.recoverEnergy(1);
@@ -368,8 +404,9 @@ const GameState = {
                 if (!crop) return;
                 
                 let growRate = 1;
-                const weather = WEATHER_DATA[this.gameTime.weather];
+                const weather = WEATHER_DATA[this.gameTime.weather] || WEATHER_DATA['sunny'];
                 growRate *= weather.growBonus;
+
                 if (plot.watered) growRate *= 1.3;
                 if (plot.fertilized) growRate *= 1.2;
                 if (this.gameTime.season === 'spring' && SEASONS_DATA.spring.bonusCrops.includes(plot.crop)) growRate *= 1.2;
@@ -381,8 +418,9 @@ const GameState = {
                 if (plot.growProgress >= 1 && plot.state !== 'ready') {
                     plot.state = 'ready';
                     showNotification(`${crop.icon} ${crop.name} 已成熟，可以收获了！`, '🌾');
-                    Scene3D.updatePlot(plot);
+                    if (typeof Scene3D !== 'undefined') Scene3D.updatePlot(plot);
                 }
+
             }
         });
         
@@ -413,12 +451,34 @@ const GameState = {
             animal.mood = Math.max(0, (animal.mood || 100) - deltaTime / 720);
         });
         
+        // 游戏时钟推进（每60秒=1游戏小时）
+        this.gameTime.hourTimer += deltaTime;
+        if (this.gameTime.hourTimer >= 60) {
+            this.gameTime.hourTimer = 0;
+            this.gameTime.hour = (this.gameTime.hour + 1) % 24;
+            // 每天早晨6点：指定领头牛、每日重置
+            if (this.gameTime.hour === 6) {
+                if (typeof AnimalBehavior !== 'undefined') {
+                    AnimalBehavior.assignCowLeader(Scene3D.animalMeshes);
+                    AnimalBehavior.dailyUpdate(this.animals);
+                }
+            }
+        }
+
         // 天气变化（每5分钟随机变化）
         this.gameTime.weatherTimer += deltaTime;
         if (this.gameTime.weatherTimer >= 300) {
             this.gameTime.weatherTimer = 0;
             this.changeWeather();
         }
+
+        // AnimalBehavior系统更新（Map缓存已在AnimalBehavior内部维护）
+        if (typeof AnimalBehavior !== 'undefined' && typeof Scene3D !== 'undefined'
+            && Scene3D.animalMeshes && Scene3D.animalMeshes.length > 0) {
+            AnimalBehavior.update(deltaTime, Scene3D.animalMeshes, this.animals, this.gameTime.weather, this.gameTime.hour);
+        }
+
+
         
         // 季节推进（每7天换季）
         // 简化：每30分钟推进1天
@@ -428,17 +488,37 @@ const GameState = {
     
     // 改变天气
     changeWeather() {
-        const weathers = ['sunny', 'sunny', 'sunny', 'cloudy', 'cloudy', 'rainy', 'storm'];
-        const newWeather = weathers[Math.floor(Math.random() * weathers.length)];
+        // 8种天气权重（季节影响）
+        const season = this.gameTime.season;
+        let pool;
+        if (season === 'winter') {
+            pool = ['sunny', 'cloudy', 'overcast', 'snow', 'snow', 'blizzard'];
+        } else if (season === 'summer') {
+            pool = ['sunny', 'sunny', 'sunny_cloudy', 'cloudy', 'rainy', 'thunderstorm'];
+        } else if (season === 'spring') {
+            pool = ['sunny', 'sunny_cloudy', 'cloudy', 'rainy', 'rainy', 'overcast'];
+        } else { // autumn
+            pool = ['sunny', 'sunny_cloudy', 'cloudy', 'overcast', 'rainy', 'heavy_rain'];
+        }
+        const newWeather = pool[Math.floor(Math.random() * pool.length)];
         if (newWeather !== this.gameTime.weather) {
+            const prev = this.gameTime.weather;
             this.gameTime.weather = newWeather;
-            const w = WEATHER_DATA[newWeather];
             updateWeatherDisplay();
-            if (newWeather === 'storm') {
-                showNotification('⛈️ 暴风雨来临！注意保护作物！', 'warning');
-            } else if (newWeather === 'rainy') {
+
+            // 天气视觉系统切换
+            if (typeof WeatherSystem !== 'undefined' && typeof Scene3D !== 'undefined') {
+                WeatherSystem.setWeather(newWeather, Scene3D);
+            }
+
+            // 通知
+            const icons = { sunny:'☀️', sunny_cloudy:'⛅', cloudy:'☁️', overcast:'🌫️', rainy:'🌧️', heavy_rain:'⛈️', snow:'🌨️', blizzard:'❄️', thunderstorm:'⚡' };
+            const names = { sunny:'晴天', sunny_cloudy:'晴间多云', cloudy:'多云', overcast:'阴天', rainy:'小雨', heavy_rain:'大雨', snow:'小雪', blizzard:'暴风雪', thunderstorm:'雷暴' };
+            showNotification(`${icons[newWeather]||'🌤'} 天气变为${names[newWeather]||newWeather}`, 'info');
+
+            // 雨天自动浇水
+            if (newWeather === 'rainy' || newWeather === 'heavy_rain' || newWeather === 'thunderstorm') {
                 showNotification('🌧️ 下雨了，作物自动浇水！', '💧');
-                // 自动浇水
                 this.plots.forEach(plot => {
                     if (plot.state === 'planted') {
                         plot.watered = true;
@@ -446,6 +526,15 @@ const GameState = {
                     }
                 });
             }
+            // 大雨风险提示
+            if (newWeather === 'heavy_rain' || newWeather === 'thunderstorm') {
+                showNotification('⚠️ 大雨来临！注意保护作物！', 'warning');
+            }
+            // 雪天提示
+            if (newWeather === 'snow' || newWeather === 'blizzard') {
+                showNotification('❄️ 下雪了！记得给动物开暖气！', 'warning');
+            }
         }
     }
+
 };
