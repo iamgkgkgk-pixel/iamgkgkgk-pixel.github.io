@@ -1231,9 +1231,16 @@ const Scene3D = {
         if (!animalData) return;
 
         const group = new THREE.Group();
-        const angle = (this.animalMeshes.length / 8) * Math.PI * 2;
-        const radius = 8;
-        group.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+        // 初始位置：沿外圈分布，确保不落在种植地块上
+        let initX, initZ;
+        let initAngle = (this.animalMeshes.length / 8) * Math.PI * 2;
+        for (let t = 0; t < 16; t++) {
+            initX = Math.cos(initAngle + t * Math.PI / 8) * 8;
+            initZ = Math.sin(initAngle + t * Math.PI / 8) * 8;
+            if (!this._isOnFarmPlot(initX, initZ)) break;
+        }
+        group.position.set(initX, 0, initZ);
+
         group.userData = { animalId: animal.id, type: 'animal' };
 
         // 根据动物类型构建对应模型
@@ -1298,8 +1305,29 @@ const Scene3D = {
             this.animalMeshes.splice(idx, 1);
         }
     },
-    
+
+    /**
+     * 检测坐标 (x, z) 是否落在种植地块范围内
+     * 地块中心：[-5,-5],[0,-5],[5,-5],[-5,0],[0,0],[5,0],[-5,5],[0,5],[5,5]
+     * 每块大小 3.5x3.5，加 0.3 安全边距
+     */
+    _isOnFarmPlot(x, z) {
+        const plotPositions = [
+            [-5, -5], [0, -5], [5, -5],
+            [-5,  0], [0,  0], [5,  0],
+            [-5,  5], [0,  5], [5,  5]
+        ];
+        const halfSize = 1.75 + 0.3; // 地块半宽 + 安全边距
+        for (const [px, pz] of plotPositions) {
+            if (Math.abs(x - px) < halfSize && Math.abs(z - pz) < halfSize) {
+                return true;
+            }
+        }
+        return false;
+    },
+
     // 更新动物产出标记
+
     updateAnimalProductMarker(animalId, hasProduct) {
         const mesh = this.animalMeshes.find(m => m.userData.animalId === animalId);
         if (!mesh) return;
@@ -1590,8 +1618,18 @@ const Scene3D = {
                     newZ = (Math.random() - 0.5) * 18;
                 }
                 // 限制在围栏内
-                ud.targetX = Math.max(-10, Math.min(10, newX));
-                ud.targetZ = Math.max(-10, Math.min(10, newZ));
+                newX = Math.max(-10, Math.min(10, newX));
+                newZ = Math.max(-10, Math.min(10, newZ));
+                // 避开种植地块：若目标落在地块上则重新采样（最多5次）
+                for (let attempt = 0; attempt < 5; attempt++) {
+                    if (!this._isOnFarmPlot(newX, newZ)) break;
+                    newX = (Math.random() - 0.5) * 18;
+                    newZ = (Math.random() - 0.5) * 18;
+                    newX = Math.max(-10, Math.min(10, newX));
+                    newZ = Math.max(-10, Math.min(10, newZ));
+                }
+                ud.targetX = newX;
+                ud.targetZ = newZ;
                 ud.moveTimer = 2 + Math.random() * 4;
             }
 
@@ -1608,18 +1646,57 @@ const Scene3D = {
                     actualSpeed = ud.walkSpeed * speedMult * 0.5;
                     const moveX = (dx / dist) * actualSpeed * deltaTime;
                     const moveZ = (dz / dist) * actualSpeed * deltaTime;
-                    mesh.position.x += moveX;
-                    mesh.position.z += moveZ;
+                    let nextX = mesh.position.x + moveX;
+                    let nextZ = mesh.position.z + moveZ;
 
-                    // 平滑转向
-                    const targetAngle = Math.atan2(dx, dz);
-                    let angleDiff = targetAngle - ud.facingAngle;
-                    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-                    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-                    ud.facingAngle += angleDiff * Math.min(1, deltaTime * 5);
-                    mesh.rotation.y = ud.facingAngle;
+                    // 若下一步踩入地块，则停止并重置目标
+                    if (this._isOnFarmPlot(nextX, nextZ)) {
+                        ud.targetX = mesh.position.x;
+                        ud.targetZ = mesh.position.z;
+                        ud.moveTimer = 1 + Math.random() * 2;
+                        actualSpeed = 0;
+                    } else {
+                        mesh.position.x = nextX;
+                        mesh.position.z = nextZ;
+
+                        // 平滑转向
+                        const targetAngle = Math.atan2(dx, dz);
+                        let angleDiff = targetAngle - ud.facingAngle;
+                        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+                        ud.facingAngle += angleDiff * Math.min(1, deltaTime * 5);
+                        mesh.rotation.y = ud.facingAngle;
+                    }
                 }
             }
+
+            // ---- 动物间碰撞分离 ----
+            const animalRadius = { chicken: 0.5, duck: 0.5, sheep: 0.8, cow: 1.0, pig: 0.8 };
+            const selfRadius = animalRadius[ud.animalType] || 0.6;
+            this.animalMeshes.forEach(other => {
+                if (other === mesh) return;
+                const otherRadius = animalRadius[other.userData.animalType] || 0.6;
+                const minDist = selfRadius + otherRadius;
+                const sepX = mesh.position.x - other.position.x;
+                const sepZ = mesh.position.z - other.position.z;
+                const sepDist = Math.sqrt(sepX * sepX + sepZ * sepZ);
+                if (sepDist > 0 && sepDist < minDist) {
+                    // 将两只动物各自推开一半
+                    const push = (minDist - sepDist) * 0.5;
+                    const nx = sepX / sepDist;
+                    const nz = sepZ / sepDist;
+                    mesh.position.x += nx * push;
+                    mesh.position.z += nz * push;
+                    other.position.x -= nx * push;
+                    other.position.z -= nz * push;
+                    // 推开后重新限制在围栏内
+                    mesh.position.x = Math.max(-10, Math.min(10, mesh.position.x));
+                    mesh.position.z = Math.max(-10, Math.min(10, mesh.position.z));
+                    other.position.x = Math.max(-10, Math.min(10, other.position.x));
+                    other.position.z = Math.max(-10, Math.min(10, other.position.z));
+                }
+            });
+
 
             // ---- 四肢动画 ----
             ud.animPhase += deltaTime * ud.stepFreq * (actualSpeed > 0 ? 1 : 0.1);
