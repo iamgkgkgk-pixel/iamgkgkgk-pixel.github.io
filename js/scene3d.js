@@ -794,37 +794,57 @@ const Scene3D = {
         const udderMat = new THREE.MeshLambertMaterial({ color: 0xffb6c1 });
         const noseMat = new THREE.MeshLambertMaterial({ color: 0xffb6c1 });
 
-        // 身体 - 大型长方体躯干
-        const bodyGeo = new THREE.BoxGeometry(0.65, 0.7, 1.6);
+        // 身体 - 椭球形躯干，腹部下垂
+        const bodyGeo = new THREE.SphereGeometry(0.42, 12, 10);
         const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.scale.set(1, 1, 1);
+        body.scale.set(1.45, 1.0, 2.1);
         body.position.set(0, 0.72, 0);
         body.castShadow = true;
         group.add(body);
 
+        // 肩峰隆起 - 牛背部特征
+        const humpGeo = new THREE.SphereGeometry(0.28, 8, 8);
+        const hump = new THREE.Mesh(humpGeo, bodyMat);
+        hump.scale.set(1.1, 0.7, 1.2);
+        hump.position.set(0, 1.08, 0.45);
+        hump.castShadow = true;
+        group.add(hump);
+
+        // 腹部下垂
+        const bellyGeo = new THREE.SphereGeometry(0.32, 8, 8);
+        const belly = new THREE.Mesh(bellyGeo, bodyMat);
+        belly.scale.set(1.2, 0.6, 1.5);
+        belly.position.set(0, 0.42, 0);
+        group.add(belly);
+
         // 黑白斑块
-        const spotPositions = [[0.2, 0.2, 0.3], [-0.15, 0.1, -0.2], [0.1, -0.1, 0.5]];
+        const spotPositions = [[0.28, 0.15, 0.3], [-0.22, 0.1, -0.2], [0.18, -0.05, 0.55]];
         spotPositions.forEach(([sx, sy, sz]) => {
-            const sGeo = new THREE.SphereGeometry(0.18 + Math.random() * 0.1, 6, 6);
+            const sGeo = new THREE.SphereGeometry(0.2 + Math.random() * 0.1, 6, 6);
             const spot = new THREE.Mesh(sGeo, spotMat);
-            spot.scale.set(1.2, 0.3, 1.0);
-            spot.position.set(sx * 0.65, sy + 0.72, sz);
+            spot.scale.set(1.3, 0.25, 1.1);
+            spot.position.set(sx, sy + 0.72, sz);
             group.add(spot);
         });
 
-        // 头部 - 宽大方正
+
+        // 头部 - 宽大，椭球形
         const headGroup = new THREE.Group();
         headGroup.position.set(0, 0.88, 0.9);
-        const headGeo = new THREE.BoxGeometry(0.5, 0.46, 0.5);
+        const headGeo = new THREE.SphereGeometry(0.26, 10, 8);
         const head = new THREE.Mesh(headGeo, bodyMat);
+        head.scale.set(1.8, 1.5, 1.7);
         head.castShadow = true;
         headGroup.add(head);
 
-        // 鼻吻部 - 宽阔
-        const snoutGeo = new THREE.BoxGeometry(0.38, 0.26, 0.22);
+
+        // 鼻吻部 - 宽阔椭球形
+        const snoutGeo = new THREE.SphereGeometry(0.18, 8, 8);
         const snout = new THREE.Mesh(snoutGeo, noseMat);
+        snout.scale.set(1.8, 1.1, 1.0);
         snout.position.set(0, -0.1, 0.3);
         headGroup.add(snout);
+
 
         // 鼻孔
         const nostrilGeo = new THREE.SphereGeometry(0.05, 6, 6);
