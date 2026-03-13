@@ -3,101 +3,161 @@
 
 const SceneBeautify = {
 
-    // ===== 1. 创建多层次草地地面 =====
+    // ===== 1. 创建岛屿草地地面（圆形+地形起伏） =====
     createRichTerrain(scene) {
-        // 基础草地（主色调 #4A7C23）
-        const groundGeo = new THREE.PlaneGeometry(60, 60, 30, 30);
-        // 顶点颜色扰动，模拟草地深浅变化
+        // 圆形岛屿草地（半径18，与sceneHorizon的ISLAND_RADIUS一致）
+        const islandRadius = 18;
+        const groundSize = islandRadius * 2 + 4; // 略大以包含边缘
+        const groundGeo = new THREE.PlaneGeometry(groundSize, groundSize, 40, 40);
         const posAttr = groundGeo.attributes.position;
         const colors = [];
         const baseColors = [
-            new THREE.Color(0x4A7C23), // 基础草色 70%
-            new THREE.Color(0x2D5016), // 深色草丛 15%
-            new THREE.Color(0x7CB342), // 浅色亮点 10%
-            new THREE.Color(0xA68B5B), // 枯黄点缀 5%
+            new THREE.Color(0x48A828), // 鲜绿 50%
+            new THREE.Color(0x2E7518), // 深绿 22%
+            new THREE.Color(0x7CB840), // 浅亮 18%
+            new THREE.Color(0x5A9030), // 中绿 10%
         ];
+
+        // 简单噪声函数（多sin叠加）
+        const noise = (x, z) => {
+            return Math.sin(x * 0.3) * Math.cos(z * 0.25) * 0.35
+                 + Math.sin(x * 0.7 + z * 0.5) * 0.18
+                 + Math.cos(x * 0.15 - z * 0.3) * 0.22;
+        };
+
         for (let i = 0; i < posAttr.count; i++) {
+            const x = posAttr.getX(i);
+            const y = posAttr.getY(i);
+            const dist = Math.sqrt(x * x + y * y);
+            const normDist = dist / islandRadius;
+
+            // 圆形裁切：岛屿外部下沉消失
+            if (normDist > 1.05) {
+                posAttr.setZ(i, -0.5); // 下沉到沙滩以下
+                // 透明色（会被sceneHorizon的岛屿地形覆盖）
+                colors.push(0.75, 0.68, 0.45); // 沙色
+                continue;
+            }
+
+            // 地形起伏（核心区域保持平坦，只在外围有微弱起伏）
+            let height = 0;
+            const distFromCenter = Math.sqrt(x * x + y * y);
+            const coreRadius = 10; // 核心农田+动物活动区域
+            if (normDist < 0.85) {
+                // 核心区域完全压平，外围才有微弱起伏
+                const coreFlatFactor = distFromCenter < coreRadius
+                    ? Math.max(0, (distFromCenter - 7) / 3) // 7内完全平，7-10渐变
+                    : 1.0;
+                const centerBump = (1 - normDist) * 0.12 * coreFlatFactor;
+                height = centerBump + noise(x, y) * 0.12 * coreFlatFactor;
+            } else {
+                // 边缘过渡（也降低幅度）
+                const edgeFactor = (normDist - 0.85) / 0.2;
+                height = noise(x, y) * (1 - edgeFactor) * 0.1;
+            }
+
+            posAttr.setZ(i, height);
+
+            // 顶点颜色
             const r = Math.random();
             let c;
-            if (r < 0.70) c = baseColors[0];
-            else if (r < 0.85) c = baseColors[1];
-            else if (r < 0.95) c = baseColors[2];
+            if (r < 0.50) c = baseColors[0];
+            else if (r < 0.72) c = baseColors[1];
+            else if (r < 0.90) c = baseColors[2];
             else c = baseColors[3];
-            // 轻微随机扰动
-            const jitter = (Math.random() - 0.5) * 0.06;
-            colors.push(c.r + jitter, c.g + jitter, c.b + jitter);
+
+            // 边缘草地颜色偏暖偏淡（模拟沙草过渡）
+            const edgeFade = Math.max(0, (normDist - 0.7) / 0.35);
+            const sandTone = new THREE.Color(0xA0B858);
+            const cr = c.r + (sandTone.r - c.r) * edgeFade;
+            const cg = c.g + (sandTone.g - c.g) * edgeFade;
+            const cb = c.b + (sandTone.b - c.b) * edgeFade;
+
+            const jitter = (Math.random() - 0.5) * 0.05;
+            colors.push(cr + jitter, cg + jitter, cb + jitter);
         }
+
         groundGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(colors), 3));
-        const groundMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0.0 });
+        groundGeo.computeVertexNormals();
+
+        const groundMat = new THREE.MeshStandardMaterial({
+            vertexColors: true, roughness: 0.85, metalness: 0.0
+        });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
         ground.receiveShadow = true;
+        ground.position.y = 0.02; // 略高于sceneHorizon的岛屿地形
         scene.add(ground);
 
-        // 草地踩踏痕（随机分布浅色椭圆斑块）
+        // 草地踩踏痕（只在岛屿内）
         for (let i = 0; i < 12; i++) {
-            const x = (Math.random() - 0.5) * 22;
-            const z = (Math.random() - 0.5) * 22;
+            const angle = Math.random() * Math.PI * 2;
+            const r = Math.random() * 12; // 限制在岛屿中心区域
+            const x = Math.cos(angle) * r;
+            const z = Math.sin(angle) * r;
             const w = 0.3 + Math.random() * 0.5;
             const d = 0.2 + Math.random() * 0.3;
             const trampleGeo = new THREE.PlaneGeometry(w, d);
-            const trampleMat = new THREE.MeshStandardMaterial({ color: 0x5D8A32, transparent: true, opacity: 0.6, roughness: 0.85, metalness: 0.0 });
+            const trampleMat = new THREE.MeshStandardMaterial({
+                color: 0x5D8A32, transparent: true, opacity: 0.6, roughness: 0.85, metalness: 0.0
+            });
             const trample = new THREE.Mesh(trampleGeo, trampleMat);
             trample.rotation.x = -Math.PI / 2;
             trample.rotation.z = Math.random() * Math.PI;
-            trample.position.set(x, 0.005, z);
+            trample.position.set(x, 0.03, z);
             scene.add(trample);
         }
     },
 
-    // ===== 2. 创建路径系统 =====
+    // ===== 2. 创建路径系统（适配圆形岛屿） =====
     createPaths(scene) {
-        // 主泥土路（纵向，连接房屋↔农田↔风车）
+        // 主泥土路（纵向，连接房屋↔农田↔风车，缩短到岛屿内）
         const mainPathMat = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.85, metalness: 0.0 });
-        const mainPathGeo = new THREE.PlaneGeometry(1.2, 26);
+        const pathLen = 22; // 缩短到岛屿内
+        const mainPathGeo = new THREE.PlaneGeometry(1.2, pathLen);
         const mainPath = new THREE.Mesh(mainPathGeo, mainPathMat);
         mainPath.rotation.x = -Math.PI / 2;
-        mainPath.position.set(0, 0.008, 0);
+        mainPath.position.set(0, 0.04, 0);
         scene.add(mainPath);
 
         // 横向主路
-        const crossPathGeo = new THREE.PlaneGeometry(26, 1.2);
+        const crossPathGeo = new THREE.PlaneGeometry(pathLen, 1.2);
         const crossPath = new THREE.Mesh(crossPathGeo, mainPathMat);
         crossPath.rotation.x = -Math.PI / 2;
-        crossPath.position.set(0, 0.008, 0);
+        crossPath.position.set(0, 0.04, 0);
         scene.add(crossPath);
 
         // 路径边缘磨损纹理（两侧深色条）
         const edgeMat = new THREE.MeshStandardMaterial({ color: 0x6B5A3E, transparent: true, opacity: 0.5, roughness: 0.85, metalness: 0.0 });
         [-0.65, 0.65].forEach(offset => {
-            const edgeGeo = new THREE.PlaneGeometry(0.15, 26);
+            const edgeGeo = new THREE.PlaneGeometry(0.15, pathLen);
             const edge = new THREE.Mesh(edgeGeo, edgeMat);
             edge.rotation.x = -Math.PI / 2;
-            edge.position.set(offset, 0.009, 0);
+            edge.position.set(offset, 0.045, 0);
             scene.add(edge);
         });
         [-0.65, 0.65].forEach(offset => {
-            const edgeGeo = new THREE.PlaneGeometry(26, 0.15);
+            const edgeGeo = new THREE.PlaneGeometry(pathLen, 0.15);
             const edge = new THREE.Mesh(edgeGeo, edgeMat);
             edge.rotation.x = -Math.PI / 2;
-            edge.position.set(0, 0.009, offset);
+            edge.position.set(0, 0.045, offset);
             scene.add(edge);
         });
 
-        // 石子小径（农田↔动物区，斜向）
+        // 石子小径（农田↔动物区）
         const stonePathMat = new THREE.MeshStandardMaterial({ color: 0x9E9E9E, transparent: true, opacity: 0.8, roughness: 0.85, metalness: 0.0 });
-        const stonePath1Geo = new THREE.PlaneGeometry(0.7, 10);
+        const stonePath1Geo = new THREE.PlaneGeometry(0.7, 8);
         const stonePath1 = new THREE.Mesh(stonePath1Geo, stonePathMat);
         stonePath1.rotation.x = -Math.PI / 2;
         stonePath1.rotation.z = 0.3;
-        stonePath1.position.set(7, 0.009, 3);
+        stonePath1.position.set(7, 0.04, 3);
         scene.add(stonePath1);
 
-        // 路面石子颗粒
+        // 路面石子颗粒（限制在岛屿内）
         const pebbleMat = new THREE.MeshStandardMaterial({ color: 0xAAAAAA, roughness: 0.85, metalness: 0.0 });
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < 25; i++) {
             const px = (Math.random() - 0.5) * 1.0;
-            const pz = (Math.random() - 0.5) * 25;
+            const pz = (Math.random() - 0.5) * pathLen;
             const pGeo = new THREE.SphereGeometry(0.04 + Math.random() * 0.04, 4, 3);
             const pebble = new THREE.Mesh(pGeo, pebbleMat);
             pebble.position.set(px, 0.02, pz);
@@ -106,94 +166,75 @@ const SceneBeautify = {
         }
     },
 
-    // ===== 3. 创建美化围栏 =====
+    // ===== 3. 创建美化围栏（环形，适配圆形岛屿） =====
     createBeautifulFence(scene) {
         const postColors = [0x8B4513, 0x7A3B10, 0x9A5020, 0xA0522D];
         const railColors = [0x8B4513, 0xA0522D];
 
-        const fenceRadius = 12;
-        const spacing = 2.0;
+        const fenceRadius = 13; // 围栏环绕半径
+        const postCount = 36;   // 围栏柱数量（均匀分布）
+        const angleStep = (Math.PI * 2) / postCount;
 
-        // 四边围栏
-        const sides = [
-            { axis: 'x', fixed: -fenceRadius, dir: 'z' },
-            { axis: 'x', fixed: fenceRadius, dir: 'z' },
-            { axis: 'z', fixed: -fenceRadius, dir: 'x' },
-            { axis: 'z', fixed: fenceRadius, dir: 'x' },
-        ];
+        for (let i = 0; i < postCount; i++) {
+            const angle = i * angleStep;
+            const px = Math.cos(angle) * fenceRadius;
+            const pz = Math.sin(angle) * fenceRadius;
 
-        sides.forEach(side => {
-            let postIndex = 0;
-            for (let t = -fenceRadius; t <= fenceRadius; t += spacing) {
-                postIndex++;
+            // 跳过落在湖泊区域内的桩位
+            if (this._isInPondArea(px, pz, 1.5)) continue;
 
-                const px = side.axis === 'x' ? t : side.fixed;
-                const pz = side.axis === 'z' ? t : side.fixed;
+            // 随机粗细变化
+            const thickMult = 0.85 + Math.random() * 0.3;
+            const w = 0.18 * thickMult;
 
-                // 跳过落在湖泊区域内的桩位（含1.5缓冲）
-                if (this._isInPondArea(px, pz, 1.5)) continue;
+            // 偶尔破损木桩
+            const isBroken = (i % 11 === 0);
+            const postH = isBroken ? (0.3 + Math.random() * 0.05) : (0.45 + Math.random() * 0.05);
+            const tiltAngle = isBroken ? (0.08 + Math.random() * 0.17) : 0;
 
-                // 随机粗细变化 ±15%
+            const postGeo = new THREE.BoxGeometry(w, postH, w);
+            const postMat = new THREE.MeshStandardMaterial({
+                color: postColors[Math.floor(Math.random() * postColors.length)],
+                roughness: 0.85, metalness: 0.0
+            });
+            const post = new THREE.Mesh(postGeo, postMat);
+            post.position.set(px, postH / 2, pz);
+            if (isBroken) post.rotation.z = tiltAngle * (Math.random() > 0.5 ? 1 : -1);
+            post.castShadow = true;
+            scene.add(post);
 
-                const thickMult = 0.85 + Math.random() * 0.3;
-                const w = 0.18 * thickMult;
+            // 横木条（连接到下一个柱子）
+            const nextI = (i + 1) % postCount;
+            const nextAngle = nextI * angleStep;
+            const npx = Math.cos(nextAngle) * fenceRadius;
+            const npz = Math.sin(nextAngle) * fenceRadius;
 
-                // 偶尔破损木桩（倾斜5-15度）
-                const isBroken = (postIndex % 9 === 0);
-                const postH = isBroken ? (0.3 + Math.random() * 0.05) : (0.45 + Math.random() * 0.05);
-                const tiltAngle = isBroken ? (0.08 + Math.random() * 0.17) : 0;
+            // 如果下一桩在湖泊内，跳过横木
+            if (this._isInPondArea(npx, npz, 1.5)) continue;
+            if (isBroken) continue;
 
-                const postGeo = new THREE.BoxGeometry(w, postH, w);
-                const postMat = new THREE.MeshStandardMaterial({
-                    color: postColors[Math.floor(Math.random() * postColors.length)],
-                    roughness: 0.85, metalness: 0.0
-                });
-                const post = new THREE.Mesh(postGeo, postMat);
+            const dx = npx - px;
+            const dz = npz - pz;
+            const railLen = Math.sqrt(dx * dx + dz * dz);
+            const railAngle = Math.atan2(dz, dx);
 
-                post.position.set(px, postH / 2, pz);
+            const railMat = new THREE.MeshStandardMaterial({
+                color: railColors[Math.floor(Math.random() * railColors.length)],
+                roughness: 0.85, metalness: 0.0
+            });
 
-                if (isBroken) post.rotation.z = tiltAngle * (Math.random() > 0.5 ? 1 : -1);
-                post.castShadow = true;
-                scene.add(post);
-
-                // 转角加粗支柱
-                if (Math.abs(t) === fenceRadius) {
-                    const cornerGeo = new THREE.BoxGeometry(0.3, 0.6, 0.3);
-                    const corner = new THREE.Mesh(cornerGeo, new THREE.MeshStandardMaterial({ color: 0x6B3410, roughness: 0.85, metalness: 0.0 }));
-                    corner.position.set(px, 0.3, pz);
-                    corner.castShadow = true;
-                    scene.add(corner);
-                }
-
-                // 横木条（两根，高低各一）—— 跳过下一段也在湖泊内的情况
-                if (t < fenceRadius) {
-                    const nextT = t + spacing;
-                    const npx = side.axis === 'x' ? nextT : side.fixed;
-                    const npz = side.axis === 'z' ? nextT : side.fixed;
-                    // 如果当前桩或下一桩在湖泊内，跳过横木
-                    if (this._isInPondArea(npx, npz, 1.5)) continue;
-
-                    const railLen = spacing;
-                    const railMat = new THREE.MeshStandardMaterial({
-                        color: railColors[Math.floor(Math.random() * railColors.length)],
-                        roughness: 0.85, metalness: 0.0
-                    });
-                    [0.35, 0.15].forEach(railY => {
-                        let railGeo;
-                        if (side.dir === 'z') {
-                            railGeo = new THREE.BoxGeometry(0.08, 0.06, railLen);
-                        } else {
-                            railGeo = new THREE.BoxGeometry(railLen, 0.06, 0.08);
-                        }
-                        const rail = new THREE.Mesh(railGeo, railMat);
-                        const rx = side.axis === 'x' ? (t + spacing / 2) : side.fixed;
-                        const rz = side.axis === 'z' ? (t + spacing / 2) : side.fixed;
-                        rail.position.set(rx, railY, rz);
-                        scene.add(rail);
-                    });
-                }
-            }
-        });
+            [0.35, 0.15].forEach(railY => {
+                const railGeo = new THREE.BoxGeometry(railLen, 0.06, 0.08);
+                const rail = new THREE.Mesh(railGeo, railMat);
+                rail.position.set(
+                    (px + npx) / 2,
+                    railY,
+                    (pz + npz) / 2
+                );
+                rail.rotation.y = -railAngle;
+                scene.add(rail);
+            });
+        }
     },
 
     // ===== 4. 创建美化土地地块 =====
@@ -304,6 +345,7 @@ const SceneBeautify = {
             const z = this._randPos();
             if (Math.abs(x) < 7 && Math.abs(z) < 7) continue; // 避开农田区
             if (this._isInPondArea(x, z)) continue; // 避开池塘区
+            if (!this._isOnIsland(x, z)) continue;  // 限制在岛屿内
             this._createFlowerCluster(scene, x, z);
         }
 
@@ -312,15 +354,18 @@ const SceneBeautify = {
             const x = this._randPos();
             const z = this._randPos();
             if (this._isInPondArea(x, z)) continue; // 避开池塘区
+            if (!this._isOnIsland(x, z)) continue;  // 限制在岛屿内
             this._createPebble(scene, x, z);
         }
 
 
-        // 灌木丛（8-12个，边界处）
-        const bushPositions = [
-            [-11, -6], [-11, 0], [-11, 6], [11, -6], [11, 0], [11, 6],
-            [-6, -11], [0, -11], [6, -11], [-6, 11], [0, 11], [6, 11]
-        ];
+        // 灌木丛（环形分布，适配圆形岛屿）
+        const bushPositions = [];
+        for (let a = 0; a < 10; a++) {
+            const angle = (a / 10) * Math.PI * 2;
+            const r = 10 + Math.random() * 3;
+            bushPositions.push([Math.cos(angle) * r, Math.sin(angle) * r]);
+        }
         bushPositions.forEach(([x, z]) => this._createBush(scene, x, z));
 
         // 蘑荇（5-8个，树下阴凉处）—— 避开池塘区域，[-7,9]和[7,9]落在池塘内，改为安全位置
@@ -334,6 +379,12 @@ const SceneBeautify = {
 
     _randPos() {
         return (Math.random() - 0.5) * 22;
+    },
+
+    // 检查坐标是否在岛屿草地区域内
+    _isOnIsland(x, z) {
+        const dist = Math.sqrt(x * x + z * z);
+        return dist < 16; // 岛屿草地半径约16（留出沙滩过渡）
     },
 
     _createFlowerCluster(scene, x, z) {

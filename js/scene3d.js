@@ -62,6 +62,21 @@ const PALETTE = {
     flowerPurple:0xA068C0, // 鲜紫
     flowerWhite: 0xF8F0E0, // 米白花
     
+    // 海洋/沙滩/热带
+    oceanDeep:   0x0A5E7A,   // 深海色
+    oceanMid:    0x1A8CAA,   // 中海色
+    oceanShallow:0x40C8D0,   // 浅海色（近岸）
+    oceanFoam:   0xE8F8FF,   // 浪花白
+    sandLight:   0xF0DCA0,   // 浅沙色
+    sandDark:    0xD4B878,   // 深沙色
+    sandWet:     0xC0A060,   // 湿沙色
+    cocoTrunk:   0x8A6030,   // 椰子树干色
+    cocoLeaf:    0x30A028,   // 椰子叶色
+    cocoFruit:   0x60A030,   // 椰子果色
+    coral:       0xE08870,   // 珊瑚色
+    shellPink:   0xF0C8B8,   // 贝壳粉
+    driftwood:   0x9A8060,   // 漂流木色
+    
     // 特殊
     gold:      0xF0B820,   // 金色
     highlight: 0xFFF088,   // 高亮暖黄
@@ -352,9 +367,9 @@ const Scene3D = {
             SceneBeautify.createPaths(this.scene);
             SceneBeautify.createBeautifulFence(this.scene);
         } else {
-            // 降级：原始地面
-            const groundGeo = new THREE.PlaneGeometry(60, 60, 20, 20);
-            const groundMat = new THREE.MeshStandardMaterial({ color: PALETTE.grassBase, roughness: 0.9, metalness: 0.0 });
+            // 降级：圆形岛屿地面
+            const groundGeo = new THREE.CircleGeometry(18, 32);
+            const groundMat = new THREE.MeshStandardMaterial({ color: PALETTE.grassBase, roughness: 0.85, metalness: 0.0 });
             const ground = new THREE.Mesh(groundGeo, groundMat);
             ground.rotation.x = -Math.PI / 2;
             ground.receiveShadow = true;
