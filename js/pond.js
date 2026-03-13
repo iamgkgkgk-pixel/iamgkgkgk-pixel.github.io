@@ -75,13 +75,12 @@ const PondSystem = {
         // 水面（浅蓝色半透明，不规则形状）
         const waterShape = this._buildPondShape(1.0);
         const waterGeo = new THREE.ShapeGeometry(waterShape);
-        const waterMat = new THREE.MeshPhysicalMaterial({
-            color: 0x7EC8E3,
+        const waterMat = new THREE.MeshStandardMaterial({
+            color: 0x50C0D8,
             transparent: true,
-            opacity: 0.72,
+            opacity: 0.7,
             roughness: 0.1,
-            metalness: 0.0,
-            reflectivity: 0.3,
+            metalness: 0.05,
             side: THREE.DoubleSide
         });
         const water = new THREE.Mesh(waterGeo, waterMat);

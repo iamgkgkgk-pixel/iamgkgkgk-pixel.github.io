@@ -8,27 +8,27 @@ const SceneHorizon = {
     horizonClouds: [],  // 地平线云雾带
     distantTrees: [],   // 远景树林
 
-    // 颜色配置（与天空盒地平线色保持一致）
+    // 颜色配置（与PALETTE天空色同步，鲜活明亮）
     colors: {
-        day:     { sky: 0x87CEEB, fog: 0xB0D8F0, horizon: 0xC8E8F8 },
+        day:     { sky: 0x55B0E8, fog: 0xC0E4FF, horizon: 0xD0F0FF },
         sunset:  { sky: 0xFF7043, fog: 0xFFB347, horizon: 0xFFCC80 },
         night:   { sky: 0x1A237E, fog: 0x2C3E50, horizon: 0x37474F },
     },
 
     // ===== 1. 初始化指数雾效 =====
     setupFog(scene) {
-        // 用指数平方雾替换线性雾：近处清晰，远处自然消隐
-        scene.fog = new THREE.FogExp2(0xB0D8F0, 0.018);
+        // 极低密度指数雾：仅远处轻微消隐，近处完全清晰
+        scene.fog = new THREE.FogExp2(0xC0E4FF, 0.006);
     },
 
     // 根据天空亮度实时同步雾色
     updateFogColor(scene, skyBrightness) {
         if (!scene.fog) return;
-        // 日间→黄昏→夜晚 颜色插值
-        const r = 0.53 * skyBrightness + 0.18 * (1 - skyBrightness);
-        const g = 0.81 * skyBrightness + 0.24 * (1 - skyBrightness);
-        const b = 0.98 * skyBrightness + 0.31 * (1 - skyBrightness);
-        scene.fog.color.setRGB(r * 1.1, g * 1.05, b);
+        // 日间→黄昏→夜晚 颜色插值（偏暖偏亮，避免灰调）
+        const r = 0.58 * skyBrightness + 0.12 * (1 - skyBrightness);
+        const g = 0.82 * skyBrightness + 0.18 * (1 - skyBrightness);
+        const b = 0.96 * skyBrightness + 0.28 * (1 - skyBrightness);
+        scene.fog.color.setRGB(r * 1.15, g * 1.1, b * 1.05);
     },
 
     // ===== 2. 地形边缘下沉处理 =====
@@ -44,15 +44,15 @@ const SceneHorizon = {
         const fadeStart = 0.55;  // 从55%半径开始下沉和颜色渐变
         const maxDrop = 6;       // 最大下沉深度
 
-        // 草地颜色
+        // 草地颜色（高饱和鲜绿）
         const grassColors = [
-            new THREE.Color(0x4A7C23),
-            new THREE.Color(0x2D5016),
-            new THREE.Color(0x7CB342),
-            new THREE.Color(0xA68B5B),
+            new THREE.Color(0x48A828),
+            new THREE.Color(0x2E7518),
+            new THREE.Color(0x80C840),
+            new THREE.Color(0xB0A050),
         ];
-        // 雾色（边缘渐变目标色）
-        const fogColor = new THREE.Color(0xB0D8F0);
+        // 边缘渐变目标色（暖绿淡色，避免灰蒙）
+        const fogColor = new THREE.Color(0x90D090);
 
         for (let i = 0; i < posAttr.count; i++) {
             const x = posAttr.getX(i);

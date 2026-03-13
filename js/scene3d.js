@@ -2,145 +2,143 @@
 
 // ===== 统一调色板系统 =====
 const PALETTE = {
-    // 暖色田园调色板 - 所有颜色统一偏黄绿暖调，中低饱和
-    sky:       0x8EC8E0,   // 柔和天蓝（降低饱和）
-    skyWarm:   0xD4B896,   // 暖黄天空（黄昏用）
+    // 暖色田园调色板 - 高饱和、高对比、鲜活明亮
+    sky:       0x55B0E8,   // 清澈天蓝（高饱和）
+    skyWarm:   0xE0A870,   // 暖橙天空（黄昏用）
     
-    // 草地/自然
-    grassBase: 0x5B8C3C,   // 暖绿草地基础色
-    grassDark: 0x3D6B22,   // 深草色
-    grassLight:0x8DB84E,   // 浅亮草色
-    grassDry:  0xAA9660,   // 枯黄色
+    // 草地/自然（鲜绿高饱和）
+    grassBase: 0x3CA030,   // 翠绿草地基础色
+    grassDark: 0x287018,   // 深翠绿
+    grassLight:0x7CC040,   // 明亮草色
+    grassDry:  0xC0A050,   // 枯黄色
     
-    // 土壤
-    soilBase:  0x7A5C42,   // 温暖棕土
-    soilDark:  0x5A3E2B,   // 深色湿润土
-    soilLight: 0x9A7B5A,   // 浅色干土
-    soilWet:   0x4A3020,   // 浇水后深色
+    // 土壤（深暖棕，与绿色形成对比）
+    soilBase:  0x8A5838,   // 深暖棕土
+    soilDark:  0x604020,   // 深色湿润土
+    soilLight: 0xA87850,   // 浅色干土
+    soilWet:   0x402818,   // 浇水后深色
     
-    // 木材
-    woodDark:  0x5C3A1E,   // 深木色（旧木）
-    woodBase:  0x7A5230,   // 基础木色
-    woodLight: 0x9E7A52,   // 浅木色（新木）
-    woodRed:   0x8B4513,   // 红棕木
+    // 木材（暖红棕）
+    woodDark:  0x603818,   // 深木色
+    woodBase:  0x7A4C28,   // 基础木色
+    woodLight: 0x9A7448,   // 浅木色
+    woodRed:   0x8A4510,   // 红棕木
     
-    // 建筑
-    barnRed:   0xA63C28,   // 谷仓红（偏暗偏暖，不刺眼）
-    barnRedDark:0x7A2A1A,  // 谷仓深红
-    roofBrown: 0x5C3317,   // 屋顶棕
-    roofTile:  0x8B5E3C,   // 瓦片色
-    stoneGray: 0x8A8478,   // 暖灰石色
-    stoneDark: 0x5E5A52,   // 深石色
+    // 建筑（高饱和对比色）
+    barnRed:   0xD04028,   // 谷仓红（鲜明高饱和）
+    barnRedDark:0x982818,  // 谷仓深红
+    roofBrown: 0x5A3018,   // 深屋顶棕
+    roofTile:  0x8A5830,   // 瓦片色
+    stoneGray: 0x908878,   // 暖灰石色
+    stoneDark: 0x605850,   // 深石色
     
-    // 风车
-    millWhite: 0xE8E0D4,   // 风车白（偏暖米白）
-    millMetal: 0x7A7870,   // 氧化铁色
-    millBlade: 0xD5CEC2,   // 风叶色
+    // 风车（亮白对比）
+    millWhite: 0xF5F0E0,   // 风车白
+    millMetal: 0x787068,   // 氧化铁色
+    millBlade: 0xE8E0D0,   // 风叶色
     
     // 金属
-    metalRust: 0x8A6844,   // 锈铁色
-    metalDark: 0x4A4A48,   // 深铁色
+    metalRust: 0x907040,   // 锈铁色
+    metalDark: 0x484848,   // 深铁色
     
     // 围栏
-    fenceBase: 0x6B4A28,   // 围栏基础色
-    fenceDark: 0x4A3218,   // 围栏深色
-    fenceLight:0x8B6940,   // 围栏浅色
+    fenceBase: 0x6A4820,   // 围栏基础色
+    fenceDark: 0x483010,   // 围栏深色
+    fenceLight:0x8A6838,   // 围栏浅色
     
-    // 水体
-    waterSurface: 0x6BBAA8, // 水面色（偏绿暖调）
-    waterDeep:    0x2A5A5A, // 深水色
+    // 水体（清澈蓝绿）
+    waterSurface: 0x40B8A8, // 水面色（鲜明蓝绿）
+    waterDeep:    0x206868, // 深水色
     
-    // 叶色
-    leafDark:  0x2D6B2D,   // 深叶绿
-    leafBase:  0x3E8A3E,   // 基础叶绿
-    leafLight: 0x5CAA5C,   // 浅叶绿
-    leafYellow:0x8BAA3A,   // 黄绿叶
+    // 叶色（翠绿高饱和）
+    leafDark:  0x1A7020,   // 深叶绿
+    leafBase:  0x2A9030,   // 基础叶绿
+    leafLight: 0x48B848,   // 浅叶绿
+    leafYellow:0x88B028,   // 黄绿叶
     
-    // 花色（中低饱和暖调）
-    flowerPink:  0xD48A8A, // 柔粉
-    flowerYellow:0xD4AA4A, // 暖黄
-    flowerPurple:0x8A6AA0, // 柔紫
-    flowerWhite: 0xE8E0D4, // 米白花
+    // 花色（鲜艳明快）
+    flowerPink:  0xF07878, // 鲜粉红
+    flowerYellow:0xF0B820, // 明黄
+    flowerPurple:0xA068C0, // 鲜紫
+    flowerWhite: 0xF8F0E0, // 米白花
     
     // 特殊
-    gold:      0xD4AA4A,   // 金色
-    highlight: 0xFFE8A0,   // 高亮暖黄
+    gold:      0xF0B820,   // 金色
+    highlight: 0xFFF088,   // 高亮暖黄
 };
 
 // ===== 材质工厂（统一管理所有材质创建） =====
 const MatFactory = {
     _cache: {},
     
-    // 木质材质（高粗糙度）
+    // 木质材质（中高粗糙度，纹理感强）
     wood(color = PALETTE.woodBase) {
         return new THREE.MeshStandardMaterial({ 
-            color, roughness: 0.85, metalness: 0.0 
+            color, roughness: 0.75, metalness: 0.0 
         });
     },
     
     // 石材材质
     stone(color = PALETTE.stoneGray) {
         return new THREE.MeshStandardMaterial({ 
-            color, roughness: 0.92, metalness: 0.02 
+            color, roughness: 0.85, metalness: 0.02 
         });
     },
     
     // 金属材质（低粗糙度）
     metal(color = PALETTE.millMetal) {
         return new THREE.MeshStandardMaterial({ 
-            color, roughness: 0.35, metalness: 0.6 
+            color, roughness: 0.3, metalness: 0.65 
         });
     },
     
     // 锈铁材质
     rustMetal(color = PALETTE.metalRust) {
         return new THREE.MeshStandardMaterial({ 
-            color, roughness: 0.7, metalness: 0.4 
+            color, roughness: 0.65, metalness: 0.4 
         });
     },
     
-    // 土壤材质
+    // 土壤材质（高粗糙度）
     soil(color = PALETTE.soilBase) {
         return new THREE.MeshStandardMaterial({ 
-            color, roughness: 0.95, metalness: 0.0 
+            color, roughness: 0.9, metalness: 0.0 
         });
     },
     
-    // 叶/草材质（轻微半透明感）
+    // 叶/草材质（中粗糙度，让颜色更鲜活）
     foliage(color = PALETTE.leafBase) {
         return new THREE.MeshStandardMaterial({ 
-            color, roughness: 0.8, metalness: 0.0
+            color, roughness: 0.65, metalness: 0.0
         });
     },
     
-    // 卡通动物材质
+    // 卡通动物材质（低粗糙度=丝滑光泽，色彩鲜明）
     toon(color) {
-        // 使用 MeshStandardMaterial 配合低粗糙度模拟丝滑皮毛感
         return new THREE.MeshStandardMaterial({ 
-            color, roughness: 0.55, metalness: 0.0 
+            color, roughness: 0.4, metalness: 0.0 
         });
     },
     
     // 建筑墙体材质
     wall(color = PALETTE.barnRed) {
         return new THREE.MeshStandardMaterial({ 
-            color, roughness: 0.78, metalness: 0.02 
+            color, roughness: 0.7, metalness: 0.02 
         });
     },
     
     // 屋顶瓦片材质
     roof(color = PALETTE.roofTile) {
         return new THREE.MeshStandardMaterial({ 
-            color, roughness: 0.7, metalness: 0.05 
+            color, roughness: 0.65, metalness: 0.05 
         });
     },
     
-    // 玻璃材质
+    // 玻璃材质（改用Standard，省去Physical的clearcoat开销）
     glass(color = 0x88CCEE, opacity = 0.4) {
-        return new THREE.MeshPhysicalMaterial({ 
+        return new THREE.MeshStandardMaterial({ 
             color, transparent: true, opacity,
-            roughness: 0.05, metalness: 0.1, 
-            clearcoat: 1.0, clearcoatRoughness: 0.1
+            roughness: 0.05, metalness: 0.15
         });
     },
     
@@ -186,20 +184,21 @@ const Scene3D = {
         // 创建场景
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(PALETTE.sky);
-        this.scene.fog = new THREE.Fog(PALETTE.sky, 30, 80);
+        this.scene.fog = new THREE.Fog(PALETTE.sky, 50, 120);
         
         // 创建相机
         this.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
         this.updateCamera();
         
-        // 创建渲染器 - 增强配置
-        this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+        // 创建渲染器 - 性能优化配置
+        this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: 'low-power' });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.1;
+        this.renderer.shadowMap.type = THREE.BasicShadowMap; // 硬阴影：GPU开销最低，视觉风格化
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // 限制1.5x，大幅降低填充率
+        // AgX色调映射：色彩饱和度更高，高光不洗白，对比度强
+        this.renderer.toneMapping = THREE.AgXToneMapping;
+        this.renderer.toneMappingExposure = 0.9;
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         // 扩大远裁面，确保远景层可见
         this.camera.far = 300;
@@ -258,32 +257,33 @@ const Scene3D = {
     
     // 设置光照
     setupLighting() {
-        // 环境光 - 暖调
-        this.ambientLight = new THREE.AmbientLight(0xFFF8E8, 0.5);
+        // 环境光 - 柔和暖白，保证暗部不死黑
+        this.ambientLight = new THREE.AmbientLight(0xFFF0E0, 0.35);
         this.scene.add(this.ambientLight);
         
-        // 太阳光 - 暖黄色直射光
-        this.sunLight = new THREE.DirectionalLight(0xFFF0D0, 1.3);
+        // 太阳光 - 暖白直射光，强度控制在合理范围
+        this.sunLight = new THREE.DirectionalLight(0xFFF4E0, 1.0);
         this.sunLight.position.set(20, 30, 20);
         this.sunLight.castShadow = true;
-        this.sunLight.shadow.mapSize.width = 4096;
-        this.sunLight.shadow.mapSize.height = 4096;
+        // 阴影贴图降至1024：视觉差异极小，GPU负载降4倍
+        this.sunLight.shadow.mapSize.width = 1024;
+        this.sunLight.shadow.mapSize.height = 1024;
         this.sunLight.shadow.camera.near = 0.5;
-        this.sunLight.shadow.camera.far = 80;
-        this.sunLight.shadow.camera.left = -20;
-        this.sunLight.shadow.camera.right = 20;
-        this.sunLight.shadow.camera.top = 20;
-        this.sunLight.shadow.camera.bottom = -20;
-        this.sunLight.shadow.bias = -0.001;
-        this.sunLight.shadow.normalBias = 0.02;
+        this.sunLight.shadow.camera.far = 60;
+        this.sunLight.shadow.camera.left = -18;
+        this.sunLight.shadow.camera.right = 18;
+        this.sunLight.shadow.camera.top = 18;
+        this.sunLight.shadow.camera.bottom = -18;
+        this.sunLight.shadow.bias = -0.002;
+        this.sunLight.shadow.normalBias = 0.04;
         this.scene.add(this.sunLight);
         
-        // 半球光（天空暖蓝/地面暖绿）- 增强环境光照层次
-        const hemiLight = new THREE.HemisphereLight(0x8EC8E0, 0x5B8C3C, 0.45);
+        // 半球光（天蓝/草绿）- 让受光面偏蓝、背光面偏绿，增强色彩丰富度
+        const hemiLight = new THREE.HemisphereLight(0x80C0E8, 0x40A030, 0.35);
         this.scene.add(hemiLight);
         
-        // 补光（从相反方向，填充暗部）
-        const fillLight = new THREE.DirectionalLight(0xD0E8FF, 0.25);
+        // 补光 - 偏暖黄，填充暗部同时增加暖感
+        const fillLight = new THREE.DirectionalLight(0xFFE8C0, 0.15);
         fillLight.position.set(-15, 10, -15);
         this.scene.add(fillLight);
         
@@ -1878,13 +1878,20 @@ const Scene3D = {
     },
 
     
-    // 创建收获粒子特效
+    // 共享粒子几何体（避免每次收获/浇水都new）
+    _particleGeo: null,
+    _getParticleGeo() {
+        if (!this._particleGeo) this._particleGeo = new THREE.SphereGeometry(0.08, 4, 4);
+        return this._particleGeo;
+    },
+
+    // 创建收获粒子特效（共享geometry，减少GC）
     createHarvestEffect(plotId, color) {
         const plot = this.plotMeshes[plotId];
         if (!plot) return;
         
-        for (let i = 0; i < 15; i++) {
-            const geo = new THREE.SphereGeometry(0.08, 6, 6);
+        const geo = this._getParticleGeo();
+        for (let i = 0; i < 10; i++) { // 15→10个粒子
             const mat = new THREE.MeshStandardMaterial({ color: color || 0xffd700, roughness: 0.4, metalness: 0.3 });
             const particle = new THREE.Mesh(geo, mat);
             particle.position.copy(plot.position);
@@ -1903,7 +1910,7 @@ const Scene3D = {
         }
     },
     
-    // 创建浇水特效
+    // 创建浇水特效（共享geometry）
     createWaterEffect(plotId) {
         const plot = this.plotMeshes[plotId];
         if (!plot) return;
@@ -1915,9 +1922,8 @@ const Scene3D = {
             plot.userData.waterTimer = 30;
         }
         
-        for (let i = 0; i < 8; i++) {
-
-            const geo = new THREE.SphereGeometry(0.06, 6, 6);
+        const geo = this._getParticleGeo();
+        for (let i = 0; i < 6; i++) { // 8→6个水滴
             const mat = new THREE.MeshStandardMaterial({ color: 0x4488ff, transparent: true, opacity: 0.8, roughness: 0.2, metalness: 0.0 });
             const drop = new THREE.Mesh(geo, mat);
             drop.position.copy(plot.position);
@@ -2082,6 +2088,8 @@ const Scene3D = {
     // 更新场景
     update(deltaTime) {
         const time = Date.now() * 0.001;
+        // 帧计数器（用于碰撞检测降频）
+        this._frameCount = (this._frameCount || 0) + 1;
         
         // 风车旋转
         if (this.windmillBlades) {
@@ -2460,7 +2468,8 @@ const Scene3D = {
             }
         });
 
-        // ---- 动物间碰撞检测（碰到其他动物时停止行走，不推搡）----
+        // ---- 动物间碰撞检测（每8帧执行一次，降低CPU开销）----
+        if (this._frameCount % 8 === 0) {
         const _animalRadius = { chicken: 0.5, duck: 0.5, sheep: 0.8, cow: 1.0, pig: 0.8 };
         const _meshes = this.animalMeshes;
         // 先收集本帧需要停止的动物
@@ -2566,7 +2575,7 @@ const Scene3D = {
                 ud.blockedCooldown = ud.moveTimer;
             }
         });
-
+        } // 碰撞检测降频 end
 
 
 
@@ -2627,7 +2636,7 @@ const Scene3D = {
                 0.81 * skyBrightness,
                 0.98 * skyBrightness
             );
-            this.ambientLight.intensity = 0.3 + skyBrightness * 0.5;
+            this.ambientLight.intensity = 0.2 + skyBrightness * 0.3;
         }
 
 

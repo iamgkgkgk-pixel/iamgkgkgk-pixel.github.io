@@ -2,10 +2,19 @@
 
 let lastTime = 0;
 let gameRunning = false;
+const TARGET_FPS = 30;
+const FRAME_INTERVAL = 1000 / TARGET_FPS; // ~33.3ms
+let _lastRenderTime = 0;
 
-// 游戏主循环
+// 游戏主循环（限制30fps，降低GPU负载防发烫）
 function gameLoop(timestamp) {
     if (!gameRunning) return;
+    requestAnimationFrame(gameLoop);
+    
+    // 帧率限制：跳过多余帧
+    const elapsed = timestamp - _lastRenderTime;
+    if (elapsed < FRAME_INTERVAL) return;
+    _lastRenderTime = timestamp - (elapsed % FRAME_INTERVAL);
     
     const deltaTime = Math.min((timestamp - lastTime) / 1000, 0.1); // 最大0.1秒
     lastTime = timestamp;
@@ -23,8 +32,6 @@ function gameLoop(timestamp) {
     
     // 渲染
     Scene3D.render();
-    
-    requestAnimationFrame(gameLoop);
 }
 
 // 加载进度模拟

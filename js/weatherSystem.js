@@ -3,10 +3,6 @@
 
 const WeatherSystem = {
     scene: null,
-    rainParticles: [],
-    snowParticles: [],
-    rainGroup: null,
-    snowGroup: null,
     rainbowMesh: null,
     auroraGroup: null,
     lightningTimeout: null,
@@ -17,17 +13,17 @@ const WeatherSystem = {
     _lastHour: -1,  // 上次更新的小时，用于跳过无变化帧
 
 
-    // 8种天气类型
+    // 8种天气类型（光照乘数基于降低后的基础值）
     WEATHER_TYPES: {
-        sunny:        { name: '晴天', icon: '☀️',  fogDensity: 0.008, skyColor: [0.53, 0.81, 0.98], ambientMult: 1.0, sunMult: 1.2 },
-        sunny_cloudy: { name: '晴间多云', icon: '⛅', fogDensity: 0.010, skyColor: [0.60, 0.82, 0.95], ambientMult: 0.9, sunMult: 1.0 },
-        cloudy:       { name: '多云', icon: '☁️',  fogDensity: 0.012, skyColor: [0.65, 0.75, 0.85], ambientMult: 0.8, sunMult: 0.7 },
-        overcast:     { name: '阴天', icon: '🌫️', fogDensity: 0.015, skyColor: [0.55, 0.60, 0.65], ambientMult: 0.6, sunMult: 0.4 },
-        rainy:        { name: '小雨', icon: '🌧️', fogDensity: 0.018, skyColor: [0.40, 0.50, 0.60], ambientMult: 0.5, sunMult: 0.3 },
-        heavy_rain:   { name: '大雨', icon: '⛈️', fogDensity: 0.025, skyColor: [0.30, 0.38, 0.48], ambientMult: 0.4, sunMult: 0.2 },
-        snow:         { name: '小雪', icon: '🌨️', fogDensity: 0.015, skyColor: [0.80, 0.88, 0.95], ambientMult: 0.7, sunMult: 0.6 },
-        blizzard:     { name: '大雪', icon: '❄️', fogDensity: 0.030, skyColor: [0.85, 0.90, 0.95], ambientMult: 0.5, sunMult: 0.3 },
-        thunderstorm: { name: '雷暴', icon: '⚡', fogDensity: 0.022, skyColor: [0.25, 0.30, 0.40], ambientMult: 0.35, sunMult: 0.15 }
+        sunny:        { name: '晴天', icon: '☀️',  fogDensity: 0.005, skyColor: [0.42, 0.78, 1.00], ambientMult: 1.0, sunMult: 1.0 },
+        sunny_cloudy: { name: '晴间多云', icon: '⛅', fogDensity: 0.007, skyColor: [0.48, 0.80, 0.98], ambientMult: 0.95, sunMult: 0.9 },
+        cloudy:       { name: '多云', icon: '☁️',  fogDensity: 0.009, skyColor: [0.55, 0.72, 0.88], ambientMult: 0.85, sunMult: 0.7 },
+        overcast:     { name: '阴天', icon: '🌫️', fogDensity: 0.012, skyColor: [0.50, 0.58, 0.68], ambientMult: 0.7, sunMult: 0.45 },
+        rainy:        { name: '小雨', icon: '🌧️', fogDensity: 0.014, skyColor: [0.38, 0.50, 0.62], ambientMult: 0.6, sunMult: 0.35 },
+        heavy_rain:   { name: '大雨', icon: '⛈️', fogDensity: 0.020, skyColor: [0.28, 0.38, 0.52], ambientMult: 0.5, sunMult: 0.25 },
+        snow:         { name: '小雪', icon: '🌨️', fogDensity: 0.010, skyColor: [0.78, 0.88, 0.98], ambientMult: 0.8, sunMult: 0.6 },
+        blizzard:     { name: '大雪', icon: '❄️', fogDensity: 0.022, skyColor: [0.82, 0.88, 0.95], ambientMult: 0.6, sunMult: 0.35 },
+        thunderstorm: { name: '雷暴', icon: '⚡', fogDensity: 0.018, skyColor: [0.22, 0.28, 0.42], ambientMult: 0.4, sunMult: 0.15 }
     },
 
     init(scene) {
@@ -60,10 +56,10 @@ const WeatherSystem = {
             this.scene.fog.far = 80;
         }
 
-        // 更新光照
+        // 更新光照（与setupLighting中的基础值匹配）
         if (scene3d) {
-            if (scene3d.ambientLight) scene3d.ambientLight.intensity = 0.6 * cfg.ambientMult;
-            if (scene3d.sunLight) scene3d.sunLight.intensity = 1.2 * cfg.sunMult;
+            if (scene3d.ambientLight) scene3d.ambientLight.intensity = 0.55 * cfg.ambientMult;
+            if (scene3d.sunLight) scene3d.sunLight.intensity = 1.6 * cfg.sunMult;
         }
 
         // 启动对应粒子
@@ -81,91 +77,95 @@ const WeatherSystem = {
         }
     },
 
-    // ===== 雨粒子 =====
+    // ===== 雨粒子（使用Points，1次draw call） =====
     _createRainGroup() {
-        this.rainGroup = new THREE.Group();
-        this.rainGroup.visible = false;
-        this.scene.add(this.rainGroup);
+        this._rainPositions = null;
+        this._rainVelocities = null;
+        this._rainPoints = null;
     },
 
     _startRain(count) {
-        this.rainGroup.visible = true;
-        // 清空旧粒子（复用Group，不dispose共享geo/mat）
-        while (this.rainGroup.children.length) this.rainGroup.remove(this.rainGroup.children[0]);
-        this.rainParticles = [];
-
-        // 共享同一份geo和mat，所有雨滴实例化
-        const geo = new THREE.CylinderGeometry(0.01, 0.01, 0.3, 3);
-        const mat = new THREE.MeshStandardMaterial({ color: 0x88aacc, transparent: true, opacity: 0.5, roughness: 0.5, metalness: 0.0 });
-        this._rainGeo = geo;
-        this._rainMat = mat;
-
+        this._stopRain();
+        const positions = new Float32Array(count * 3);
+        const velocities = new Float32Array(count);
         for (let i = 0; i < count; i++) {
-            const drop = new THREE.Mesh(geo, mat);
-            drop.position.set(
-                (Math.random() - 0.5) * 40,
-                Math.random() * 20,
-                (Math.random() - 0.5) * 40
-            );
-            drop.rotation.x = 0.15;
-            this.rainGroup.add(drop);
-            this.rainParticles.push(drop);
+            positions[i * 3]     = (Math.random() - 0.5) * 40;
+            positions[i * 3 + 1] = Math.random() * 20;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
+            velocities[i] = 10 + Math.random() * 4;
         }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const mat = new THREE.PointsMaterial({
+            color: 0x88aacc,
+            size: 0.15,
+            transparent: true,
+            opacity: 0.6,
+            depthWrite: false,
+            sizeAttenuation: true
+        });
+        this._rainPoints = new THREE.Points(geo, mat);
+        this._rainPositions = positions;
+        this._rainVelocities = velocities;
+        this._rainCount = count;
+        this.scene.add(this._rainPoints);
     },
-
 
     _stopRain() {
-        if (this.rainGroup) {
-            this.rainGroup.visible = false;
-            while (this.rainGroup.children.length) this.rainGroup.remove(this.rainGroup.children[0]);
+        if (this._rainPoints) {
+            this.scene.remove(this._rainPoints);
+            this._rainPoints.geometry.dispose();
+            this._rainPoints.material.dispose();
+            this._rainPoints = null;
+            this._rainPositions = null;
+            this._rainVelocities = null;
         }
-        // dispose共享资源
-        if (this._rainGeo) { this._rainGeo.dispose(); this._rainGeo = null; }
-        if (this._rainMat) { this._rainMat.dispose(); this._rainMat = null; }
-        this.rainParticles = [];
     },
 
 
-    // ===== 雪粒子 =====
+    // ===== 雪粒子（使用Points，1次draw call） =====
     _createSnowGroup() {
-        this.snowGroup = new THREE.Group();
-        this.snowGroup.visible = false;
-        this.scene.add(this.snowGroup);
+        this._snowPositions = null;
+        this._snowDrifts = null;
+        this._snowPoints = null;
     },
 
     _startSnow(count) {
-        this.snowGroup.visible = true;
-        while (this.snowGroup.children.length) this.snowGroup.remove(this.snowGroup.children[0]);
-        this.snowParticles = [];
-
-        // 共享geo和mat
-        const geo = new THREE.SphereGeometry(0.04, 4, 4);
-        const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, roughness: 0.5, metalness: 0.0 });
-        this._snowGeo = geo;
-        this._snowMat = mat;
-
+        this._stopSnow();
+        const positions = new Float32Array(count * 3);
+        const drifts = new Float32Array(count);
         for (let i = 0; i < count; i++) {
-            const flake = new THREE.Mesh(geo, mat);
-            flake.position.set(
-                (Math.random() - 0.5) * 40,
-                Math.random() * 20,
-                (Math.random() - 0.5) * 40
-            );
-            flake.userData.drift = (Math.random() - 0.5) * 0.5;
-            this.snowGroup.add(flake);
-            this.snowParticles.push(flake);
+            positions[i * 3]     = (Math.random() - 0.5) * 40;
+            positions[i * 3 + 1] = Math.random() * 20;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
+            drifts[i] = (Math.random() - 0.5) * 0.5;
         }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const mat = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.2,
+            transparent: true,
+            opacity: 0.85,
+            depthWrite: false,
+            sizeAttenuation: true
+        });
+        this._snowPoints = new THREE.Points(geo, mat);
+        this._snowPositions = positions;
+        this._snowDrifts = drifts;
+        this._snowCount = count;
+        this.scene.add(this._snowPoints);
     },
 
-
     _stopSnow() {
-        if (this.snowGroup) {
-            this.snowGroup.visible = false;
-            while (this.snowGroup.children.length) this.snowGroup.remove(this.snowGroup.children[0]);
+        if (this._snowPoints) {
+            this.scene.remove(this._snowPoints);
+            this._snowPoints.geometry.dispose();
+            this._snowPoints.material.dispose();
+            this._snowPoints = null;
+            this._snowPositions = null;
+            this._snowDrifts = null;
         }
-        if (this._snowGeo) { this._snowGeo.dispose(); this._snowGeo = null; }
-        if (this._snowMat) { this._snowMat.dispose(); this._snowMat = null; }
-        this.snowParticles = [];
     },
 
 
@@ -315,29 +315,39 @@ const WeatherSystem = {
 
     // ===== 每帧更新 =====
     update(deltaTime, time) {
-        // 雨滴下落
-        if (this.rainGroup && this.rainGroup.visible) {
-            this.rainParticles.forEach(drop => {
-                drop.position.y -= 12 * deltaTime;
-                if (drop.position.y < -1) {
-                    drop.position.y = 20;
-                    drop.position.x = (Math.random() - 0.5) * 40;
-                    drop.position.z = (Math.random() - 0.5) * 40;
+        // 雨滴下落（直接修改BufferAttribute，极快）
+        if (this._rainPoints && this._rainPositions) {
+            const pos = this._rainPositions;
+            const vel = this._rainVelocities;
+            const count = this._rainCount;
+            for (let i = 0; i < count; i++) {
+                const yi = i * 3 + 1;
+                pos[yi] -= vel[i] * deltaTime;
+                if (pos[yi] < -1) {
+                    pos[yi] = 20;
+                    pos[i * 3] = (Math.random() - 0.5) * 40;
+                    pos[i * 3 + 2] = (Math.random() - 0.5) * 40;
                 }
-            });
+            }
+            this._rainPoints.geometry.attributes.position.needsUpdate = true;
         }
 
         // 雪花飘落
-        if (this.snowGroup && this.snowGroup.visible) {
-            this.snowParticles.forEach(flake => {
-                flake.position.y -= 1.5 * deltaTime;
-                flake.position.x += flake.userData.drift * deltaTime;
-                if (flake.position.y < 0) {
-                    flake.position.y = 20;
-                    flake.position.x = (Math.random() - 0.5) * 40;
-                    flake.position.z = (Math.random() - 0.5) * 40;
+        if (this._snowPoints && this._snowPositions) {
+            const pos = this._snowPositions;
+            const drifts = this._snowDrifts;
+            const count = this._snowCount;
+            for (let i = 0; i < count; i++) {
+                const base = i * 3;
+                pos[base + 1] -= 1.5 * deltaTime;
+                pos[base] += drifts[i] * deltaTime;
+                if (pos[base + 1] < 0) {
+                    pos[base + 1] = 20;
+                    pos[base] = (Math.random() - 0.5) * 40;
+                    pos[base + 2] = (Math.random() - 0.5) * 40;
                 }
-            });
+            }
+            this._snowPoints.geometry.attributes.position.needsUpdate = true;
         }
 
         // 极光波动
@@ -384,13 +394,13 @@ const WeatherSystem = {
                 }
             }
 
-            // 光照强度
+            // 光照强度（基于新的降低后基础值）
             const nightFactor = (hour >= 19 || hour < 5) ? 0.15 : skyBrightness;
             if (scene3d.ambientLight) {
-                scene3d.ambientLight.intensity = (0.3 + nightFactor * 0.5) * cfg.ambientMult;
+                scene3d.ambientLight.intensity = (0.25 + nightFactor * 0.35) * cfg.ambientMult;
             }
             if (scene3d.sunLight) {
-                scene3d.sunLight.intensity = 1.2 * nightFactor * cfg.sunMult;
+                scene3d.sunLight.intensity = 1.0 * nightFactor * cfg.sunMult;
                 if (hour >= 19 || hour < 5) {
                     scene3d.sunLight.color.setHex(0xaabbff);
                 } else if (hour >= 5 && hour < 7) {
