@@ -21,9 +21,31 @@ const GameState = {
         legendaryHarvest: 0,
         goldenHarvests: 0,
         uniqueCrops: new Set(),
-        totalAnimals: 0
+        totalAnimals: 0,
+        totalFishCaught: 0,
+        totalGacha: 0
     },
     
+    // 钻石商店 buff 状态
+    buffs: {
+        growSpeed: { active: false, endTime: 0, value: 1 },
+        luckyHarvest: { active: false, endTime: 0, value: 1 },
+        fishLuck: { active: false, charges: 0, value: 1 },
+        autoWater: { active: false, endTime: 0, value: 1 }
+    },
+
+    // 额外土地（扩展券解锁的）
+    extraPlots: 0,
+
+    // 新版每日任务（从池中随机选4个）
+    dailyTaskSystem: {
+        date: null,           // 当天日期字符串
+        tasks: [],            // 当天的4个任务
+        allClearClaimed: false, // 全勤奖是否已领取
+        onlineMinutes: 0,     // 在线分钟计数
+        onlineTimer: 0        // 在线计时器（秒）
+    },
+
     // 农场土地（9块）
     plots: [],
     
@@ -95,6 +117,14 @@ const GameState = {
         pokedexTokenMilestones: new Set()
     },
 
+    // 加工/烹饪系统
+    cooking: {
+        buildings: [],
+        queue: [],
+        products: {},
+        totalProcessed: 0
+    },
+
     // 初始化
 
     init() {
@@ -154,7 +184,17 @@ const GameState = {
             gacha: {
                 ...this.gacha,
                 pokedexTokenMilestones: [...(this.gacha?.pokedexTokenMilestones || new Set())]
-            }
+            },
+            buffs: this.buffs,
+            extraPlots: this.extraPlots || 0,
+            dailyTaskSystem: this.dailyTaskSystem,
+            cooking: this.cooking,
+            social: this.social,
+            orders: this.orders,
+            decoration: this.decoration,
+            seasonalEvent: this.seasonalEvent,
+            breeding: this.breeding,
+            celebration: this.celebration
         };
 
 
@@ -203,6 +243,34 @@ const GameState = {
                     ...data.gacha,
                     pokedexTokenMilestones: new Set(data.gacha.pokedexTokenMilestones || [])
                 };
+            }
+
+            if (data.buffs) {
+                this.buffs = { ...this.buffs, ...data.buffs };
+            }
+            if (data.extraPlots !== undefined) {
+                this.extraPlots = data.extraPlots;
+            }
+            if (data.dailyTaskSystem) {
+                this.dailyTaskSystem = { ...this.dailyTaskSystem, ...data.dailyTaskSystem };
+            }
+            if (data.cooking) {
+                this.cooking = { ...this.cooking, ...data.cooking };
+            }
+            if (data.orders) {
+                this.orders = data.orders;
+            }
+            if (data.decoration) {
+                this.decoration = data.decoration;
+            }
+            if (data.seasonalEvent) {
+                this.seasonalEvent = data.seasonalEvent;
+            }
+            if (data.breeding) {
+                this.breeding = data.breeding;
+            }
+            if (data.celebration) {
+                this.celebration = data.celebration;
             }
 
 
@@ -329,6 +397,9 @@ const GameState = {
     
     // 更新任务进度
     updateQuestProgress(type, amount = 1) {
+        // 新版每日任务系统
+        this.updateDailyTaskProgress(type, amount);
+        
         // 每日任务
         DAILY_QUESTS.forEach(q => {
             if (q.type === type && this.quests.daily[q.id]) {
@@ -388,12 +459,25 @@ const GameState = {
             if (ach.condition.includes('legendaryHarvest') && p.legendaryHarvest >= parseInt(ach.condition.split('>=')[1])) unlocked = true;
             if (ach.condition.includes('goldenHarvests') && p.goldenHarvests >= parseInt(ach.condition.split('>=')[1])) unlocked = true;
             if (ach.condition.includes('uniqueCrops') && p.uniqueCrops.size >= parseInt(ach.condition.split('>=')[1])) unlocked = true;
+            if (ach.condition.includes('totalFishCaught') && (p.totalFishCaught || 0) >= parseInt(ach.condition.split('>=')[1])) unlocked = true;
+            if (ach.condition.includes('totalGacha') && (p.totalGacha || 0) >= parseInt(ach.condition.split('>=')[1])) unlocked = true;
+            if (ach.condition.includes('pokedexPercent')) {
+                const total = Object.keys(this.pokedex || {}).length;
+                // 估算总图鉴条目：11种作物 + 8种动物 + 鱼类 ≈ 30
+                const percent = Math.floor((total / 30) * 100);
+                if (percent >= parseInt(ach.condition.split('>=')[1])) unlocked = true;
+            }
             
             if (unlocked) {
                 this.achievements.add(ach.id);
                 showNotification(`🏆 解锁成就：${ach.name}！`, 'gold');
                 this.addGold(ach.reward);
                 this.addXP(ach.xp);
+                // 钻石奖励
+                if (ach.diamond && ach.diamond > 0) {
+                    this.addDiamond(ach.diamond);
+                    showNotification(`💎 成就奖励：${ach.diamond} 钻石！`, 'gold');
+                }
             }
         });
     },
@@ -410,6 +494,29 @@ const GameState = {
     // 游戏主循环更新
     update(deltaTime) {
         const now = Date.now();
+
+        // ===== 钻石商店 Buff 管理 =====
+        // 检查时间制buff是否过期
+        ['growSpeed', 'luckyHarvest', 'autoWater'].forEach(buffKey => {
+            const buff = this.buffs[buffKey];
+            if (buff && buff.active && buff.endTime > 0 && now >= buff.endTime) {
+                buff.active = false;
+                buff.value = 1;
+                buff.endTime = 0;
+                const buffNames = { growSpeed: '高级肥料', luckyHarvest: '幸运药水', autoWater: '自动浇水器' };
+                showNotification(`⏰ ${buffNames[buffKey]} 效果已结束`, 'info');
+            }
+        });
+
+        // 自动浇水 buff
+        if (this.buffs.autoWater && this.buffs.autoWater.active) {
+            this.plots.forEach(plot => {
+                if ((plot.state === 'planted' || plot.state === 'fertilized') && !plot.watered) {
+                    plot.watered = true;
+                    if (plot.state === 'planted') plot.state = 'watered';
+                }
+            });
+        }
         
         // 能量恢复（每72秒恢复1点，原6分钟提速5倍）
         this.energyTimer += deltaTime;
@@ -430,6 +537,11 @@ const GameState = {
                 let growRate = 1;
                 const weather = WEATHER_DATA[this.gameTime.weather] || WEATHER_DATA['sunny'];
                 growRate *= weather.growBonus;
+
+                // 钻石商店：高级肥料 buff
+                if (this.buffs.growSpeed && this.buffs.growSpeed.active) {
+                    growRate *= this.buffs.growSpeed.value;
+                }
 
                 if (plot.watered) growRate *= 1.3;
                 if (plot.fertilized) growRate *= 1.2;
@@ -522,10 +634,111 @@ const GameState = {
         
         // 季节推进（每7天换季）
         // 简化：每30分钟推进1天
+
+        // 新版每日任务：在线时间累计
+        if (this.dailyTaskSystem && this.dailyTaskSystem.tasks && this.dailyTaskSystem.tasks.length > 0) {
+            this.dailyTaskSystem.onlineTimer = (this.dailyTaskSystem.onlineTimer || 0) + deltaTime;
+            if (this.dailyTaskSystem.onlineTimer >= 60) { // 每60秒=1分钟
+                this.dailyTaskSystem.onlineTimer -= 60;
+                this.dailyTaskSystem.onlineMinutes = (this.dailyTaskSystem.onlineMinutes || 0) + 1;
+                // 更新在线任务进度
+                this.updateDailyTaskProgress('online_min', 1);
+            }
+        }
+
+        // 加工系统更新
+        if (typeof CookingSystem !== 'undefined') {
+            CookingSystem.update(deltaTime);
+        }
+
+        // 订单系统检查过期
+        if (typeof OrderSystem !== 'undefined' && this.orders) {
+            if (!this._orderCheckTimer) this._orderCheckTimer = 0;
+            this._orderCheckTimer += deltaTime;
+            if (this._orderCheckTimer >= 60) {
+                this._orderCheckTimer = 0;
+                OrderSystem.checkExpired();
+            }
+        }
+
+        // 繁殖系统检查完成
+        if (typeof BreedingSystem !== 'undefined' && this.breeding && this.breeding.active) {
+            if (!this._breedCheckTimer) this._breedCheckTimer = 0;
+            this._breedCheckTimer += deltaTime;
+            if (this._breedCheckTimer >= 10) {
+                this._breedCheckTimer = 0;
+                BreedingSystem.checkBreedingComplete();
+            }
+        }
+
+        // 里程碑检查（每2分钟检查一次）
+        if (typeof CelebrationSystem !== 'undefined') {
+            if (!this._celebCheckTimer) this._celebCheckTimer = 0;
+            this._celebCheckTimer += deltaTime;
+            if (this._celebCheckTimer >= 120) {
+                this._celebCheckTimer = 0;
+                CelebrationSystem.checkMilestones();
+            }
+        }
         
         this.gameTime.lastUpdate = now;
     },
     
+    // ===== 新版每日任务系统 =====
+    
+    // 初始化/刷新每日任务（每天随机选4个）
+    refreshDailyTasks() {
+        const today = new Date().toDateString();
+        if (this.dailyTaskSystem.date === today && this.dailyTaskSystem.tasks.length > 0) {
+            return; // 今天已经刷新过了
+        }
+        
+        // 从池中随机选4个不重复的
+        const pool = [...DAILY_QUESTS_POOL];
+        const selected = [];
+        for (let i = 0; i < 4 && pool.length > 0; i++) {
+            const idx = Math.floor(Math.random() * pool.length);
+            const quest = pool.splice(idx, 1)[0];
+            selected.push({
+                ...quest,
+                progress: 0,
+                completed: false,
+                claimed: false
+            });
+        }
+        
+        this.dailyTaskSystem = {
+            date: today,
+            tasks: selected,
+            allClearClaimed: false,
+            onlineMinutes: 0,
+            onlineTimer: 0
+        };
+        
+        this.save();
+    },
+    
+    // 更新新版每日任务进度
+    updateDailyTaskProgress(type, amount = 1) {
+        if (!this.dailyTaskSystem || !this.dailyTaskSystem.tasks) return;
+        
+        this.dailyTaskSystem.tasks.forEach(task => {
+            if (task.type === type && !task.completed) {
+                task.progress = Math.min(task.target, task.progress + amount);
+                if (task.progress >= task.target) {
+                    task.completed = true;
+                    showNotification(`📋 每日任务完成：${task.name}！`, 'gold');
+                }
+            }
+        });
+    },
+    
+    // 检查是否全部完成（全勤奖）
+    isDailyAllClear() {
+        if (!this.dailyTaskSystem || !this.dailyTaskSystem.tasks) return false;
+        return this.dailyTaskSystem.tasks.every(t => t.completed && t.claimed);
+    },
+
     // 改变天气
     changeWeather() {
         // 8种天气权重（季节影响）

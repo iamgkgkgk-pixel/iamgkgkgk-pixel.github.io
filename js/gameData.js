@@ -186,26 +186,72 @@ const DECO_DATA = {
 
 // 成就数据
 const ACHIEVEMENTS_DATA = [
-    { id: 'first_harvest', name: '初次收获', icon: '🌾', desc: '收获第一棵作物', reward: 100, xp: 50, condition: 'totalHarvest >= 1', rarity: 'common' },
-    { id: 'harvest_10', name: '勤劳农夫', icon: '👨‍🌾', desc: '累计收获10次', reward: 200, xp: 100, condition: 'totalHarvest >= 10', rarity: 'common' },
-    { id: 'harvest_100', name: '丰收达人', icon: '🏆', desc: '累计收获100次', reward: 500, xp: 300, condition: 'totalHarvest >= 100', rarity: 'rare' },
-    { id: 'first_animal', name: '动物朋友', icon: '🐾', desc: '购买第一只动物', reward: 150, xp: 80, condition: 'totalAnimals >= 1', rarity: 'common' },
-    { id: 'animals_5', name: '小农场主', icon: '🐄', desc: '同时拥有5只动物', reward: 400, xp: 200, condition: 'totalAnimals >= 5', rarity: 'uncommon' },
-    { id: 'animals_10', name: '牧场主人', icon: '🏡', desc: '同时拥有10只动物', reward: 1000, xp: 500, condition: 'totalAnimals >= 10', rarity: 'rare' },
-    { id: 'level_10', name: '成长之路', icon: '⭐', desc: '达到10级', reward: 500, xp: 0, condition: 'level >= 10', rarity: 'uncommon' },
-    { id: 'level_20', name: '农业专家', icon: '🌟', desc: '达到20级', reward: 1000, xp: 0, condition: 'level >= 20', rarity: 'rare' },
-    { id: 'level_30', name: '庄园主', icon: '💫', desc: '达到30级', reward: 2000, xp: 0, condition: 'level >= 30', rarity: 'epic' },
-    { id: 'gold_1000', name: '小有积蓄', icon: '💰', desc: '累计获得1000金币', reward: 200, xp: 100, condition: 'totalGoldEarned >= 1000', rarity: 'common' },
-    { id: 'gold_10000', name: '富甲一方', icon: '💎', desc: '累计获得10000金币', reward: 500, xp: 300, condition: 'totalGoldEarned >= 10000', rarity: 'rare' },
-    { id: 'streak_7', name: '坚持一周', icon: '🔥', desc: '连续签到7天', reward: 300, xp: 150, condition: 'maxStreak >= 7', rarity: 'uncommon' },
-    { id: 'streak_30', name: '月度达人', icon: '🌙', desc: '连续签到30天', reward: 1000, xp: 500, condition: 'maxStreak >= 30', rarity: 'epic' },
-    { id: 'rare_crop', name: '珍稀收藏家', icon: '🍓', desc: '收获一种珍稀作物', reward: 500, xp: 200, condition: 'rareHarvest >= 1', rarity: 'rare' },
-    { id: 'legendary_crop', name: '传说农夫', icon: '🌹', desc: '收获一种传说作物', reward: 2000, xp: 1000, condition: 'legendaryHarvest >= 1', rarity: 'legendary' },
-    { id: 'golden_harvest', name: '金色奇迹', icon: '✨', desc: '触发一次金色收获', reward: 300, xp: 150, condition: 'goldenHarvests >= 1', rarity: 'rare' },
-    { id: 'all_crops', name: '植物百科', icon: '📚', desc: '种植过所有种类的作物', reward: 3000, xp: 1500, condition: 'uniqueCrops >= 11', rarity: 'legendary' }
+    // === 种植成就 ===
+    { id: 'first_harvest', name: '初次收获', icon: '🌾', desc: '收获第一棵作物', reward: 100, xp: 50, diamond: 1, condition: 'totalHarvest >= 1', rarity: 'common', category: 'plant' },
+    { id: 'harvest_10', name: '勤劳农夫', icon: '👨‍🌾', desc: '累计收获10次', reward: 200, xp: 100, diamond: 2, condition: 'totalHarvest >= 10', rarity: 'common', category: 'plant' },
+    { id: 'harvest_50', name: '种植能手', icon: '🌿', desc: '累计收获50次', reward: 400, xp: 200, diamond: 3, condition: 'totalHarvest >= 50', rarity: 'uncommon', category: 'plant' },
+    { id: 'harvest_100', name: '丰收达人', icon: '🏆', desc: '累计收获100次', reward: 500, xp: 300, diamond: 5, condition: 'totalHarvest >= 100', rarity: 'rare', category: 'plant' },
+    { id: 'harvest_500', name: '农业帝国', icon: '👑', desc: '累计收获500次', reward: 2000, xp: 1000, diamond: 10, condition: 'totalHarvest >= 500', rarity: 'legendary', category: 'plant' },
+    { id: 'rare_crop', name: '珍稀收藏家', icon: '🍓', desc: '收获一种珍稀作物', reward: 500, xp: 200, diamond: 3, condition: 'rareHarvest >= 1', rarity: 'rare', category: 'plant' },
+    { id: 'rare_crop_10', name: '稀有专家', icon: '🫐', desc: '累计收获10次珍稀作物', reward: 1000, xp: 500, diamond: 5, condition: 'rareHarvest >= 10', rarity: 'epic', category: 'plant' },
+    { id: 'legendary_crop', name: '传说农夫', icon: '🌹', desc: '收获一种传说作物', reward: 2000, xp: 1000, diamond: 8, condition: 'legendaryHarvest >= 1', rarity: 'legendary', category: 'plant' },
+    { id: 'golden_harvest', name: '金色奇迹', icon: '✨', desc: '触发一次金色收获', reward: 300, xp: 150, diamond: 2, condition: 'goldenHarvests >= 1', rarity: 'rare', category: 'plant' },
+    { id: 'golden_harvest_10', name: '黄金之手', icon: '🤲', desc: '触发10次金色收获', reward: 1000, xp: 500, diamond: 5, condition: 'goldenHarvests >= 10', rarity: 'epic', category: 'plant' },
+    { id: 'all_crops', name: '植物百科', icon: '📚', desc: '种植过所有种类的作物', reward: 3000, xp: 1500, diamond: 10, condition: 'uniqueCrops >= 11', rarity: 'legendary', category: 'plant' },
+
+    // === 动物成就 ===
+    { id: 'first_animal', name: '动物朋友', icon: '🐾', desc: '购买第一只动物', reward: 150, xp: 80, diamond: 1, condition: 'totalAnimals >= 1', rarity: 'common', category: 'animal' },
+    { id: 'animals_3', name: '小牧场', icon: '🐣', desc: '拥有3只动物', reward: 300, xp: 150, diamond: 2, condition: 'totalAnimals >= 3', rarity: 'common', category: 'animal' },
+    { id: 'animals_5', name: '小农场主', icon: '🐄', desc: '同时拥有5只动物', reward: 400, xp: 200, diamond: 3, condition: 'totalAnimals >= 5', rarity: 'uncommon', category: 'animal' },
+    { id: 'animals_10', name: '牧场主人', icon: '🏡', desc: '同时拥有10只动物', reward: 1000, xp: 500, diamond: 5, condition: 'totalAnimals >= 10', rarity: 'rare', category: 'animal' },
+    { id: 'animals_15', name: '动物园长', icon: '🦁', desc: '同时拥有15只动物', reward: 2000, xp: 1000, diamond: 8, condition: 'totalAnimals >= 15', rarity: 'epic', category: 'animal' },
+
+    // === 等级成就 ===
+    { id: 'level_5', name: '启程之路', icon: '🌱', desc: '达到5级', reward: 200, xp: 0, diamond: 1, condition: 'level >= 5', rarity: 'common', category: 'progress' },
+    { id: 'level_10', name: '成长之路', icon: '⭐', desc: '达到10级', reward: 500, xp: 0, diamond: 2, condition: 'level >= 10', rarity: 'uncommon', category: 'progress' },
+    { id: 'level_20', name: '农业专家', icon: '🌟', desc: '达到20级', reward: 1000, xp: 0, diamond: 5, condition: 'level >= 20', rarity: 'rare', category: 'progress' },
+    { id: 'level_30', name: '庄园主', icon: '💫', desc: '达到30级', reward: 2000, xp: 0, diamond: 8, condition: 'level >= 30', rarity: 'epic', category: 'progress' },
+    { id: 'level_40', name: '传奇农神', icon: '👑', desc: '达到40级', reward: 5000, xp: 0, diamond: 15, condition: 'level >= 40', rarity: 'legendary', category: 'progress' },
+
+    // === 经济成就 ===
+    { id: 'gold_1000', name: '小有积蓄', icon: '💰', desc: '累计获得1000金币', reward: 200, xp: 100, diamond: 1, condition: 'totalGoldEarned >= 1000', rarity: 'common', category: 'economy' },
+    { id: 'gold_10000', name: '富甲一方', icon: '💎', desc: '累计获得10000金币', reward: 500, xp: 300, diamond: 3, condition: 'totalGoldEarned >= 10000', rarity: 'rare', category: 'economy' },
+    { id: 'gold_50000', name: '农业大亨', icon: '🏦', desc: '累计获得50000金币', reward: 1500, xp: 800, diamond: 8, condition: 'totalGoldEarned >= 50000', rarity: 'epic', category: 'economy' },
+    { id: 'gold_100000', name: '百万富翁', icon: '💵', desc: '累计获得100000金币', reward: 3000, xp: 1500, diamond: 15, condition: 'totalGoldEarned >= 100000', rarity: 'legendary', category: 'economy' },
+
+    // === 签到成就 ===
+    { id: 'streak_3', name: '初来乍到', icon: '📅', desc: '连续签到3天', reward: 100, xp: 50, diamond: 1, condition: 'maxStreak >= 3', rarity: 'common', category: 'social' },
+    { id: 'streak_7', name: '坚持一周', icon: '🔥', desc: '连续签到7天', reward: 300, xp: 150, diamond: 3, condition: 'maxStreak >= 7', rarity: 'uncommon', category: 'social' },
+    { id: 'streak_30', name: '月度达人', icon: '🌙', desc: '连续签到30天', reward: 1000, xp: 500, diamond: 8, condition: 'maxStreak >= 30', rarity: 'epic', category: 'social' },
+    { id: 'streak_100', name: '百日冲刺', icon: '💯', desc: '连续签到100天', reward: 3000, xp: 1500, diamond: 15, condition: 'maxStreak >= 100', rarity: 'legendary', category: 'social' },
+
+    // === 钓鱼成就 ===
+    { id: 'first_fish', name: '初试垂钓', icon: '🐟', desc: '成功钓到第一条鱼', reward: 100, xp: 50, diamond: 1, condition: 'totalFishCaught >= 1', rarity: 'common', category: 'fish' },
+    { id: 'fish_20', name: '钓鱼爱好者', icon: '🎣', desc: '累计钓到20条鱼', reward: 500, xp: 200, diamond: 3, condition: 'totalFishCaught >= 20', rarity: 'uncommon', category: 'fish' },
+    { id: 'fish_100', name: '垂钓大师', icon: '🐠', desc: '累计钓到100条鱼', reward: 1500, xp: 800, diamond: 8, condition: 'totalFishCaught >= 100', rarity: 'epic', category: 'fish' },
+
+    // === 收集成就 ===
+    { id: 'gacha_5', name: '扭蛋新手', icon: '🎰', desc: '完成5次扭蛋', reward: 200, xp: 100, diamond: 2, condition: 'totalGacha >= 5', rarity: 'common', category: 'collect' },
+    { id: 'gacha_30', name: '扭蛋达人', icon: '🎲', desc: '完成30次扭蛋', reward: 800, xp: 400, diamond: 5, condition: 'totalGacha >= 30', rarity: 'rare', category: 'collect' },
+    { id: 'pokedex_50', name: '图鉴半满', icon: '📖', desc: '图鉴完成度达50%', reward: 1000, xp: 500, diamond: 5, condition: 'pokedexPercent >= 50', rarity: 'rare', category: 'collect' }
 ];
 
-// 每日任务数据
+// 每日任务数据（任务池 - 每天从中随机选4个）
+const DAILY_QUESTS_POOL = [
+    { id: 'harvest_3', name: '今日收获', desc: '收获3次作物', target: 3, reward: 50, xp: 30, diamond: 0, type: 'harvest' },
+    { id: 'water_5', name: '辛勤浇水', desc: '浇水5次', target: 5, reward: 20, xp: 15, diamond: 0, type: 'water' },
+    { id: 'feed_2', name: '喂食动物', desc: '喂食动物2次', target: 2, reward: 30, xp: 20, diamond: 0, type: 'feed' },
+    { id: 'fish_1', name: '钓到一条鱼', desc: '成功钓到1条鱼', target: 1, reward: 40, xp: 25, diamond: 0, type: 'fish' },
+    { id: 'plant_3', name: '播种希望', desc: '播种3次', target: 3, reward: 20, xp: 15, diamond: 0, type: 'plant' },
+    { id: 'gacha_1', name: '扭蛋一次', desc: '完成1次扭蛋', target: 1, reward: 0, xp: 10, diamond: 2, type: 'gacha' },
+    { id: 'online_10', name: '在线10分钟', desc: '在线游戏10分钟', target: 10, reward: 30, xp: 20, diamond: 0, type: 'online_min' },
+    { id: 'rare_harvest_1', name: '稀有收获', desc: '收获1个稀有作物', target: 1, reward: 0, xp: 30, diamond: 3, type: 'rare' }
+];
+
+// 每日全勤奖
+const DAILY_ALLCLEAR_REWARD = { gold: 0, diamond: 8, xp: 50 };
+
+// 兼容旧版：保留原 DAILY_QUESTS 引用
 const DAILY_QUESTS = [
     { id: 'harvest_5', name: '今日收获', desc: '收获5次作物', target: 5, reward: 200, xp: 50, type: 'harvest' },
     { id: 'water_10', name: '辛勤浇水', desc: '浇水10次', target: 10, reward: 100, xp: 30, type: 'water' },
@@ -276,6 +322,85 @@ const CHECKIN_REWARDS = [
     { day: 5, icon: '🌟', amount: 1, type: 'rare_seed', desc: '稀有种子包' },
     { day: 6, icon: '💎', amount: 10, type: 'diamond', desc: '10钻石' },
     { day: 7, icon: '🎁', amount: 1, type: 'legend_pack', desc: '传说礼包' }
+];
+
+// ===== 钻石商店商品数据 =====
+const DIAMOND_SHOP_DATA = [
+    {
+        id: 'premium_fertilizer',
+        name: '高级肥料',
+        icon: '🧪',
+        price: 3,
+        type: 'buff',
+        buffType: 'growSpeed',
+        buffValue: 2,        // 生长速度 x2
+        duration: 30 * 60,   // 30 分钟（秒）
+        description: '作物生长速度×2，持续30分钟',
+        category: 'consumable'
+    },
+    {
+        id: 'lucky_potion',
+        name: '幸运药水',
+        icon: '🍀',
+        price: 5,
+        type: 'buff',
+        buffType: 'luckyHarvest',
+        buffValue: 1.5,      // 稀有度提升概率 +50%
+        duration: 30 * 60,
+        description: '收获稀有品质概率+50%，持续30分钟',
+        category: 'consumable'
+    },
+    {
+        id: 'animal_feed_pack',
+        name: '动物饲料包',
+        icon: '🥫',
+        price: 6,
+        type: 'instant',
+        description: '所有动物立即产出',
+        category: 'consumable'
+    },
+    {
+        id: 'master_bait',
+        name: '钓鱼大师饵',
+        icon: '🪱',
+        price: 8,
+        type: 'buff',
+        buffType: 'fishLuck',
+        buffValue: 1.5,      // 稀有鱼概率 +50%
+        charges: 5,           // 5 次钓鱼
+        description: '稀有鱼概率+50%，持续5次钓鱼',
+        category: 'consumable'
+    },
+    {
+        id: 'auto_watering',
+        name: '自动浇水器',
+        icon: '💦',
+        price: 10,
+        type: 'buff',
+        buffType: 'autoWater',
+        buffValue: 1,
+        duration: 2 * 60 * 60, // 2 小时
+        description: '自动浇水2小时',
+        category: 'consumable'
+    },
+    {
+        id: 'rare_seed_box',
+        name: '稀有种子盲盒',
+        icon: '🎁',
+        price: 15,
+        type: 'instant',
+        description: '随机获得紫色/金色品质种子',
+        category: 'consumable'
+    },
+    {
+        id: 'land_expansion',
+        name: '土地扩展券',
+        icon: '📜',
+        price: 30,
+        type: 'permanent',
+        description: '永久解锁1块新土地',
+        category: 'permanent'
+    }
 ];
 
 // 模拟排行榜数据

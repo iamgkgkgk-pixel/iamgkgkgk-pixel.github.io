@@ -352,14 +352,14 @@ const AdSystem = {
 
             /* 激励广告入口按钮 */
             #ad-reward-panel {
-                position: fixed; left: 15px; bottom: 95px;
-                z-index: 100; display: flex; flex-direction: column; gap: 6px;
+                position: fixed; left: 12px; bottom: 100px;
+                z-index: 100; display: flex; flex-direction: column; align-items: flex-start;
             }
             .ad-reward-btn {
                 display: flex; align-items: center; gap: 6px;
-                background: rgba(0,0,0,0.75); border: 1px solid rgba(255,215,0,0.4);
-                border-radius: 20px; padding: 6px 12px; cursor: pointer;
-                color: white; font-size: 12px; transition: all 0.2s;
+                background: rgba(0,0,0,0.75); border: 1px solid rgba(255,215,0,0.3);
+                border-radius: 18px; padding: 5px 10px; cursor: pointer;
+                color: white; font-size: 11px; transition: all 0.2s;
                 white-space: nowrap;
             }
             .ad-reward-btn:hover { border-color: #ffd700; background: rgba(255,215,0,0.15); }

@@ -7,7 +7,7 @@ function showModal(id) {
     switch(id) {
         case 'shop-modal': renderShop('seeds'); break;
         case 'inventory-modal': renderInventory('seeds'); break;
-        case 'quest-modal': renderQuests('daily'); break;
+        case 'quest-modal': renderQuests('dailyNew'); break;
         case 'achievement-modal': renderAchievements(); break;
         case 'animal-modal': renderAnimalPanel(); break;
         case 'rank-modal': renderRankboard('week'); break;
@@ -19,6 +19,52 @@ function showModal(id) {
             const fishTotal = document.getElementById('fish-total');
             if (fishToday) fishToday.textContent = FishingSystem.totalFishToday || 0;
             if (fishTotal) fishTotal.textContent = GameState.player.totalFishCaught || 0;
+            break;
+        case 'cooking-modal':
+            if (typeof CookingSystem !== 'undefined') {
+                CookingSystem.initState();
+                CookingSystem.renderPanel();
+            }
+            break;
+        case 'social-modal':
+            if (typeof SocialSystem !== 'undefined') {
+                SocialSystem.initState();
+                SocialSystem.renderPanel();
+            }
+            break;
+        case 'order-modal':
+            if (typeof OrderSystem !== 'undefined') {
+                OrderSystem.initState();
+                OrderSystem.renderPanel();
+            }
+            break;
+        case 'deco-modal':
+            if (typeof DecoSystem !== 'undefined') {
+                DecoSystem.initState();
+                DecoSystem.renderPanel();
+            }
+            break;
+        case 'event-modal':
+            if (typeof SeasonalEvents !== 'undefined') {
+                SeasonalEvents.initState();
+                SeasonalEvents.renderPanel();
+                // 更新标题
+                const ev = SeasonalEvents.getCurrentEvent();
+                const titleEl = document.getElementById('event-modal-title');
+                if (titleEl && ev) titleEl.textContent = ev.name;
+            }
+            break;
+        case 'breeding-modal':
+            if (typeof BreedingSystem !== 'undefined') {
+                BreedingSystem.initState();
+                BreedingSystem.renderPanel();
+            }
+            break;
+        case 'celebration-modal':
+            if (typeof CelebrationSystem !== 'undefined') {
+                CelebrationSystem.initState();
+                CelebrationSystem.renderPanel();
+            }
             break;
 
     }
@@ -66,6 +112,13 @@ function updateHUD() {
                               ...Object.values(GameState.quests.main || {})]
             .some(q => q.completed && !q.claimed);
         questDot.style.display = hasClaimable ? 'block' : 'none';
+    }
+
+    // 社交小红点：有收到的互助通知
+    const socialDot = document.getElementById('social-red-dot');
+    if (socialDot) {
+        const hasUnread = (GameState.social?.receivedHelp || []).length > 0;
+        socialDot.style.display = hasUnread ? 'block' : 'none';
     }
 
     // 游戏时钟更新
@@ -228,14 +281,23 @@ function renderShop(tab) {
             `;
             item.onclick = () => {
                 if (GameState.spendGold(deco.price)) {
+                    // 添加到装饰系统库存
+                    if (typeof DecoSystem !== 'undefined') {
+                        DecoSystem.initState();
+                        if (!GameState.decoration.inventory[deco.id]) GameState.decoration.inventory[deco.id] = 0;
+                        GameState.decoration.inventory[deco.id]++;
+                    }
                     showNotification(`${deco.icon} 购买了 ${deco.name}！`, '🏡');
                     GameState.save();
+                    renderShop('deco');
                 } else {
                     showNotification(`金币不足！需要 ${deco.price} 金币`, '💰', 'warning');
                 }
             };
             content.appendChild(item);
         });
+    } else if (tab === 'diamond') {
+        renderDiamondShop();
     }
 }
 
@@ -296,6 +358,16 @@ function renderInventory(tab) {
                 }
             }
         });
+        // 显示加工产品
+        if (typeof CookingSystem !== 'undefined' && GameState.cooking && GameState.cooking.products) {
+            Object.entries(GameState.cooking.products).forEach(([productId, count]) => {
+                if (count <= 0) return;
+                const recipe = Object.values(RECIPES).find(r => Object.keys(r.output).includes(productId));
+                if (recipe) {
+                    items.push({ icon: recipe.resultIcon, name: recipe.name, count, value: recipe.sellPrice, isProcessed: true });
+                }
+            });
+        }
     } else if (tab === 'tools') {
         Object.entries(GameState.inventory.tools).forEach(([id, count]) => {
             if (count > 0 && TOOLS_DATA[id]) {
@@ -342,6 +414,12 @@ function switchQuestTab(tab) {
 function renderQuests(tab) {
     const content = document.getElementById('quest-content');
     content.innerHTML = '';
+
+    // 新版每日任务
+    if (tab === 'dailyNew') {
+        renderDailyNewQuests(content);
+        return;
+    }
     
     let quests = [];
     let questData = [];
@@ -401,35 +479,179 @@ function claimQuest(tab, questId) {
     GameState.save();
 }
 
+// ===== 新版每日任务渲染 =====
+function renderDailyNewQuests(content) {
+    // 确保任务已初始化
+    GameState.refreshDailyTasks();
+    
+    const tasks = GameState.dailyTaskSystem.tasks || [];
+    
+    if (tasks.length === 0) {
+        content.innerHTML = '<div style="color:#aaa;text-align:center;padding:20px">任务加载中...</div>';
+        return;
+    }
+
+    // 完成进度总览
+    const completedCount = tasks.filter(t => t.claimed).length;
+    const headerDiv = document.createElement('div');
+    headerDiv.style.cssText = 'text-align:center;margin-bottom:15px;padding:10px;background:rgba(0,191,255,0.08);border-radius:10px;border:1px solid rgba(0,191,255,0.2)';
+    headerDiv.innerHTML = `
+        <div style="font-size:14px;color:#00bfff;margin-bottom:6px">📋 今日任务进度</div>
+        <div style="display:flex;gap:8px;justify-content:center">
+            ${[0,1,2,3].map(i => `<div style="width:24px;height:24px;border-radius:50%;background:${i < completedCount ? '#4CAF50' : 'rgba(255,255,255,0.1)'};display:flex;align-items:center;justify-content:center;font-size:12px">${i < completedCount ? '✓' : (i+1)}</div>`).join('')}
+        </div>
+    `;
+    content.appendChild(headerDiv);
+    
+    // 任务列表
+    tasks.forEach((task, idx) => {
+        const percent = Math.min(100, (task.progress / task.target) * 100);
+        const item = document.createElement('div');
+        item.className = 'quest-item';
+        if (task.completed) item.style.borderLeftColor = '#ffd700';
+        if (task.claimed) item.style.opacity = '0.6';
+        
+        // 构建奖励文字
+        let rewardText = [];
+        if (task.reward > 0) rewardText.push(`💰${task.reward}`);
+        if (task.diamond > 0) rewardText.push(`💎${task.diamond}`);
+        if (task.xp > 0) rewardText.push(`${task.xp}XP`);
+        
+        item.innerHTML = `
+            <div class="quest-name">${task.name}</div>
+            <div class="quest-desc">${task.desc}</div>
+            <div class="quest-progress-bg"><div class="quest-progress" style="width:${percent}%"></div></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px">
+                <div class="quest-reward">奖励: ${rewardText.join(' + ')}</div>
+                <div style="font-size:12px;color:#aaa">${task.progress}/${task.target}</div>
+            </div>
+            ${task.completed && !task.claimed ? `<button class="btn-gold" style="margin-top:8px;width:100%;padding:6px" onclick="claimDailyNewQuest(${idx})">领取奖励</button>` : ''}
+            ${task.claimed ? '<div style="color:#4CAF50;font-size:12px;margin-top:5px">✅ 已领取</div>' : ''}
+        `;
+        content.appendChild(item);
+    });
+    
+    // 全勤奖
+    const allClearDiv = document.createElement('div');
+    const isAllClear = GameState.isDailyAllClear();
+    const allClearClaimed = GameState.dailyTaskSystem.allClearClaimed;
+    
+    allClearDiv.style.cssText = `margin-top:15px;padding:15px;background:${isAllClear ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.03)'};border-radius:12px;border:2px solid ${isAllClear && !allClearClaimed ? '#ffd700' : 'rgba(255,255,255,0.1)'};text-align:center`;
+    allClearDiv.innerHTML = `
+        <div style="font-size:16px;margin-bottom:6px">🎖️ 全勤奖</div>
+        <div style="font-size:13px;color:#aaa;margin-bottom:8px">完成全部4个任务后领取</div>
+        <div style="font-size:14px;color:#ffd700">奖励: 💎${DAILY_ALLCLEAR_REWARD.diamond} + ${DAILY_ALLCLEAR_REWARD.xp}XP</div>
+        <div style="margin-top:8px;font-size:12px;color:#aaa">${completedCount}/4 已领取</div>
+        ${isAllClear && !allClearClaimed ? `<button class="btn-gold" style="margin-top:10px;width:100%" onclick="claimDailyAllClear()">🎖️ 领取全勤奖</button>` : ''}
+        ${allClearClaimed ? '<div style="color:#4CAF50;font-size:13px;margin-top:8px">✅ 已领取全勤奖</div>' : ''}
+    `;
+    content.appendChild(allClearDiv);
+}
+
+// 领取新版每日任务奖励
+function claimDailyNewQuest(idx) {
+    const task = GameState.dailyTaskSystem.tasks[idx];
+    if (!task || !task.completed || task.claimed) return;
+    
+    task.claimed = true;
+    
+    if (task.reward > 0) GameState.addGold(task.reward);
+    if (task.diamond > 0) GameState.addDiamond(task.diamond);
+    if (task.xp > 0) GameState.addXP(task.xp);
+    
+    let rewardMsg = [];
+    if (task.reward > 0) rewardMsg.push(`${task.reward}金币`);
+    if (task.diamond > 0) rewardMsg.push(`${task.diamond}钻石`);
+    if (task.xp > 0) rewardMsg.push(`${task.xp}XP`);
+    
+    showNotification(`🎁 领取了：${rewardMsg.join(' + ')}！`, 'gold');
+    renderQuests('dailyNew');
+    GameState.save();
+}
+
+// 领取全勤奖
+function claimDailyAllClear() {
+    if (!GameState.isDailyAllClear() || GameState.dailyTaskSystem.allClearClaimed) return;
+    
+    GameState.dailyTaskSystem.allClearClaimed = true;
+    
+    if (DAILY_ALLCLEAR_REWARD.gold > 0) GameState.addGold(DAILY_ALLCLEAR_REWARD.gold);
+    if (DAILY_ALLCLEAR_REWARD.diamond > 0) GameState.addDiamond(DAILY_ALLCLEAR_REWARD.diamond);
+    if (DAILY_ALLCLEAR_REWARD.xp > 0) GameState.addXP(DAILY_ALLCLEAR_REWARD.xp);
+    
+    showNotification(`🎖️ 全勤奖领取成功！💎${DAILY_ALLCLEAR_REWARD.diamond} + ${DAILY_ALLCLEAR_REWARD.xp}XP！`, 'gold');
+    renderQuests('dailyNew');
+    GameState.save();
+}
+
 // ===== 成就渲染 =====
+let currentAchTab = 'all';
+
 function renderAchievements() {
     const content = document.getElementById('achievement-content');
     content.innerHTML = '';
     
     const rarityColors = { common: '#aaa', uncommon: '#4CAF50', rare: '#2196F3', epic: '#9C27B0', legendary: '#FF9800' };
     
-    ACHIEVEMENTS_DATA.forEach(ach => {
-        const unlocked = GameState.achievements.has(ach.id);
+    // 总计
+    const total = ACHIEVEMENTS_DATA.length;
+    const unlocked = GameState.achievements.size;
+    
+    const header = document.createElement('div');
+    header.style.cssText = 'text-align:center;color:#aaa;font-size:13px;margin-bottom:12px;padding:8px;background:rgba(255,255,255,0.05);border-radius:8px';
+    header.textContent = `已解锁 ${unlocked}/${total} 个成就`;
+    content.appendChild(header);
+
+    // 分类标签
+    const categories = [
+        { key: 'all', label: '全部' },
+        { key: 'plant', label: '🌱 种植' },
+        { key: 'animal', label: '🐄 动物' },
+        { key: 'progress', label: '⭐ 成长' },
+        { key: 'economy', label: '💰 经济' },
+        { key: 'social', label: '📅 签到' },
+        { key: 'fish', label: '🎣 钓鱼' },
+        { key: 'collect', label: '📖 收集' }
+    ];
+    
+    const tabsDiv = document.createElement('div');
+    tabsDiv.className = 'tabs';
+    tabsDiv.style.marginBottom = '12px';
+    categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = `tab-btn ${currentAchTab === cat.key ? 'active' : ''}`;
+        btn.textContent = cat.label;
+        btn.onclick = () => {
+            currentAchTab = cat.key;
+            renderAchievements();
+        };
+        tabsDiv.appendChild(btn);
+    });
+    content.appendChild(tabsDiv);
+    
+    // 过滤成就
+    const filtered = currentAchTab === 'all' ? ACHIEVEMENTS_DATA : ACHIEVEMENTS_DATA.filter(a => a.category === currentAchTab);
+    
+    filtered.forEach(ach => {
+        const isUnlocked = GameState.achievements.has(ach.id);
         const item = document.createElement('div');
-        item.className = `achievement-item ${unlocked ? 'unlocked' : 'locked'}`;
+        item.className = `achievement-item ${isUnlocked ? 'unlocked' : 'locked'}`;
+        
+        let rewardText = `💰${ach.reward}`;
+        if (ach.diamond > 0) rewardText += ` + 💎${ach.diamond}`;
+        if (ach.xp > 0) rewardText += ` + ${ach.xp}XP`;
+        
         item.innerHTML = `
             <div class="ach-icon">${ach.icon}</div>
             <div class="ach-info">
                 <div class="ach-name" style="color:${rarityColors[ach.rarity]}">${ach.name}</div>
                 <div class="ach-desc">${ach.desc}</div>
-                <div style="font-size:11px;color:#ffd700;margin-top:3px">奖励: 💰${ach.reward}</div>
+                <div style="font-size:11px;color:#ffd700;margin-top:3px">奖励: ${rewardText}</div>
             </div>
-            <div style="font-size:20px">${unlocked ? '✅' : '🔒'}</div>
+            <div style="font-size:20px">${isUnlocked ? '✅' : '🔒'}</div>
         `;
         content.appendChild(item);
     });
-    
-    const total = ACHIEVEMENTS_DATA.length;
-    const unlocked = GameState.achievements.size;
-    const header = document.createElement('div');
-    header.style.cssText = 'text-align:center;color:#aaa;font-size:13px;margin-bottom:15px;padding:8px;background:rgba(255,255,255,0.05);border-radius:8px';
-    header.textContent = `已解锁 ${unlocked}/${total} 个成就`;
-    content.insertBefore(header, content.firstChild);
 }
 
 // ===== 动物面板渲染 =====
@@ -562,6 +784,87 @@ function renderCheckinGrid() {
         btn.textContent = '✅ 今日签到';
         btn.disabled = false;
     }
+}
+
+// ===== 钻石商店渲染 =====
+function renderDiamondShop() {
+    const content = document.getElementById('shop-content');
+    content.innerHTML = '';
+
+    // 当前余额提示
+    const balanceDiv = document.createElement('div');
+    balanceDiv.style.cssText = 'text-align:center;margin-bottom:15px;padding:10px;background:rgba(0,191,255,0.1);border-radius:10px;border:1px solid rgba(0,191,255,0.3)';
+    balanceDiv.innerHTML = `<span style="font-size:16px;color:#00bfff">💎 当前钻石: <strong>${GameState.player.diamond}</strong></span>`;
+    content.appendChild(balanceDiv);
+
+    // 当前活跃 buff 提示
+    const activeBuffs = [];
+    if (GameState.buffs.growSpeed && GameState.buffs.growSpeed.active) {
+        const remain = Math.max(0, Math.ceil((GameState.buffs.growSpeed.endTime - Date.now()) / 60000));
+        activeBuffs.push(`🧪 高级肥料 (${remain}分钟)`);
+    }
+    if (GameState.buffs.luckyHarvest && GameState.buffs.luckyHarvest.active) {
+        const remain = Math.max(0, Math.ceil((GameState.buffs.luckyHarvest.endTime - Date.now()) / 60000));
+        activeBuffs.push(`🍀 幸运药水 (${remain}分钟)`);
+    }
+    if (GameState.buffs.autoWater && GameState.buffs.autoWater.active) {
+        const remain = Math.max(0, Math.ceil((GameState.buffs.autoWater.endTime - Date.now()) / 60000));
+        activeBuffs.push(`💦 自动浇水 (${remain}分钟)`);
+    }
+    if (GameState.buffs.fishLuck && GameState.buffs.fishLuck.active && GameState.buffs.fishLuck.charges > 0) {
+        activeBuffs.push(`🪱 钓鱼大师 (${GameState.buffs.fishLuck.charges}次)`);
+    }
+
+    if (activeBuffs.length > 0) {
+        const buffDiv = document.createElement('div');
+        buffDiv.style.cssText = 'margin-bottom:12px;padding:8px 12px;background:rgba(76,175,80,0.1);border-radius:8px;border:1px solid rgba(76,175,80,0.3);font-size:12px;color:#8BC34A';
+        buffDiv.innerHTML = `<div style="margin-bottom:4px;font-weight:bold">✨ 当前生效中:</div>${activeBuffs.join('<br>')}`;
+        content.appendChild(buffDiv);
+    }
+
+    // 商品网格
+    const grid = document.createElement('div');
+    grid.className = 'shop-grid';
+    grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+    content.appendChild(grid);
+
+    DIAMOND_SHOP_DATA.forEach(item => {
+        const canAfford = GameState.player.diamond >= item.price;
+        const card = document.createElement('div');
+        card.className = 'shop-item';
+        card.style.cssText = `
+            border-color: ${canAfford ? 'rgba(0,191,255,0.4)' : 'rgba(255,255,255,0.05)'};
+            background: ${canAfford ? 'rgba(0,191,255,0.05)' : 'rgba(255,255,255,0.02)'};
+            ${!canAfford ? 'opacity:0.5;' : ''}
+            padding: 15px;
+        `;
+
+        // 检查是否为永久物品且已满
+        let statusText = '';
+        if (item.id === 'land_expansion' && GameState.plots.length >= 16) {
+            statusText = '<div style="color:#f44336;font-size:11px;margin-top:4px">已达上限</div>';
+        }
+
+        card.innerHTML = `
+            <div class="item-icon" style="font-size:36px">${item.icon}</div>
+            <div class="item-name" style="font-size:13px;font-weight:bold;margin:6px 0;color:#ddd">${item.name}</div>
+            <div style="font-size:11px;color:#aaa;min-height:30px">${item.description}</div>
+            <div class="item-price" style="color:#00bfff;font-size:14px;margin-top:6px">💎 ${item.price}</div>
+            ${statusText}
+        `;
+
+        if (canAfford && !(item.id === 'land_expansion' && GameState.plots.length >= 16)) {
+            card.onclick = () => {
+                buyDiamondItem(item.id);
+                renderDiamondShop();
+            };
+            card.style.cursor = 'pointer';
+        } else {
+            card.style.cursor = 'not-allowed';
+        }
+
+        grid.appendChild(card);
+    });
 }
 
 // 点击空白关闭弹窗

@@ -64,6 +64,14 @@ function showLandMenu(plotId, x, y) {
     document.getElementById('action-water').style.display = (plot.state === 'planted' || plot.state === 'fertilized') ? 'flex' : 'none';
     document.getElementById('action-fertilize').style.display = (plot.state === 'planted' || plot.state === 'watered') ? 'flex' : 'none';
     document.getElementById('action-harvest').style.display = plot.state === 'ready' ? 'flex' : 'none';
+    // 加速卡：作物在生长中（不是空地也不是已成熟）时显示
+    const speedupBtn = document.getElementById('action-speedup');
+    if (speedupBtn) {
+        const canSpeedup = plot.state !== 'empty' && plot.state !== 'ready';
+        const speedCount = (GameState.inventory.tools && GameState.inventory.tools['speedUp']) || 0;
+        speedupBtn.style.display = canSpeedup ? 'flex' : 'none';
+        speedupBtn.querySelector('.action-icon').nextSibling.textContent = ` 使用加速卡 (${speedCount})`;
+    }
     document.getElementById('action-upgrade').style.display = plot.quality !== 'magic' ? 'flex' : 'none';
     
     // 定位菜单
@@ -133,6 +141,7 @@ function doLandAction(action) {
         case 'water': doWater(currentPlotId); break;
         case 'fertilize': doFertilize(currentPlotId); break;
         case 'harvest': doHarvest(currentPlotId); break;
+        case 'speedup': useSpeedUp(currentPlotId); break;
         case 'upgrade': doUpgradeLand(currentPlotId); break;
     }
 }
@@ -159,6 +168,12 @@ function doPetAnimal(animalId) {
     } else {
         showNotification('💕 抚摸了动物！', 'gold');
     }
+
+    // 培育系统：提升亲密度
+    if (typeof BreedingSystem !== 'undefined') BreedingSystem.addIntimacy(animalId, 3);
+    // 季节活动
+    if (typeof SeasonalEvents !== 'undefined') SeasonalEvents.updateProgress('pet');
+
     GameState.save();
 }
 
@@ -310,6 +325,13 @@ function doPlant(plotId, cropId) {
     const crop = CROPS_DATA[cropId];
     showNotification(`${crop.icon} 种下了 ${crop.name}！`, '🌱');
     
+    // 教程通知
+    if (typeof TutorialSystem !== 'undefined') TutorialSystem.notifyAction('plant');
+    // 季节活动
+    if (typeof SeasonalEvents !== 'undefined') SeasonalEvents.updateProgress('plant');
+    // 庆典追踪
+    if (typeof CelebrationSystem !== 'undefined') CelebrationSystem.trackWeekly('harvest', 0);
+
     GameState.save();
 }
 
@@ -335,6 +357,12 @@ function doWater(plotId) {
     
     GameState.updateQuestProgress('water');
     showNotification('💧 浇水完成！作物生长加速！', '💧');
+
+    // 教程通知
+    if (typeof TutorialSystem !== 'undefined') TutorialSystem.notifyAction('water');
+    // 季节活动
+    if (typeof SeasonalEvents !== 'undefined') SeasonalEvents.updateProgress('water');
+
     GameState.save();
 }
 
@@ -398,6 +426,14 @@ function doHarvest(plotId) {
     let sellMultiplier = 1;
     if (plot.cropQuality === 'good') sellMultiplier = 1.5;
     if (plot.cropQuality === 'perfect') sellMultiplier = 2;
+
+    // 钻石商店：幸运药水 buff 提升品质
+    if (GameState.buffs.luckyHarvest && GameState.buffs.luckyHarvest.active) {
+        if (sellMultiplier < 2 && Math.random() < 0.5) {
+            sellMultiplier = sellMultiplier < 1.5 ? 1.5 : 2;
+            showNotification('🍀 幸运药水发挥效果！品质提升！', 'gold');
+        }
+    }
     
     // 添加到背包
     if (!GameState.inventory.harvest[plot.crop]) {
@@ -444,6 +480,13 @@ function doHarvest(plotId) {
         showNotification(`${crop.icon} 收获了 ${quantity} 个 ${crop.name}！`, '🌾');
     }
     
+    // 教程通知
+    if (typeof TutorialSystem !== 'undefined') TutorialSystem.notifyAction('harvest');
+    // 季节活动
+    if (typeof SeasonalEvents !== 'undefined') SeasonalEvents.updateProgress('harvest');
+    // 庆典追踪
+    if (typeof CelebrationSystem !== 'undefined') CelebrationSystem.trackWeekly('harvest');
+
     GameState.checkAchievements();
     GameState.save();
 }
@@ -585,6 +628,12 @@ function doFeedAnimal(animalId) {
     
     const animalData = ANIMALS_DATA[animal.type];
     showNotification(`${animalData.icon} ${animal.name} 吃得很开心！`, '🥕');
+
+    // 培育系统：提升亲密度
+    if (typeof BreedingSystem !== 'undefined') BreedingSystem.addIntimacy(animalId, 5);
+    // 季节活动
+    if (typeof SeasonalEvents !== 'undefined') SeasonalEvents.updateProgress('feed');
+
     GameState.save();
 }
 
@@ -628,6 +677,14 @@ function doCollectAnimal(animalId) {
     
     GameState.updateQuestProgress('collect');
     showNotification(`${animalData.product} 收集了 ${quantity} 个 ${animalData.productName}，获得 ${gold} 金币！`, '🥚');
+
+    // 培育系统：提升亲密度
+    if (typeof BreedingSystem !== 'undefined') BreedingSystem.addIntimacy(animalId, 2);
+    // 庆典追踪
+    if (typeof CelebrationSystem !== 'undefined') CelebrationSystem.trackWeekly('collect');
+    // 季节活动
+    if (typeof SeasonalEvents !== 'undefined') SeasonalEvents.updateProgress('collect');
+
     GameState.save();
 }
 
@@ -666,11 +723,30 @@ function sellAll() {
         totalItems += count;
         GameState.inventory.harvest[key] = 0;
     });
+
+    // 同时出售加工产品
+    if (typeof CookingSystem !== 'undefined' && GameState.cooking && GameState.cooking.products) {
+        Object.entries(GameState.cooking.products).forEach(([productId, count]) => {
+            if (count <= 0) return;
+            const recipe = Object.values(RECIPES).find(r => Object.keys(r.output).includes(productId));
+            if (recipe) {
+                totalGold += recipe.sellPrice * count;
+                totalItems += count;
+                GameState.cooking.products[productId] = 0;
+            }
+        });
+    }
     
     if (totalGold > 0) {
         GameState.addGold(totalGold);
         GameState.addXP(Math.floor(totalGold / 10));
         showNotification(`💰 出售了 ${totalItems} 件物品，获得 ${totalGold} 金币！`, 'gold');
+
+        // 庆典追踪
+        if (typeof CelebrationSystem !== 'undefined') CelebrationSystem.trackWeekly('gold', totalGold);
+        // 季节活动
+        if (typeof SeasonalEvents !== 'undefined') SeasonalEvents.updateProgress('gold', totalGold);
+
         GameState.save();
     } else {
         showNotification('背包中没有可出售的物品！', '🎒', 'warning');
@@ -773,5 +849,121 @@ function useSpeedUp(plotId) {
     Scene3D.updatePlot(plot);
     
     showNotification('⚡ 加速卡使用成功！作物立即成熟！', 'gold');
+
+    // 教程通知
+    if (typeof TutorialSystem !== 'undefined') TutorialSystem.notifyAction('speedup_used');
+
     GameState.save();
+}
+
+// ===== 钻石商店购买逻辑 =====
+function buyDiamondItem(itemId) {
+    const item = DIAMOND_SHOP_DATA.find(i => i.id === itemId);
+    if (!item) return;
+
+    // 检查钻石是否足够
+    if (GameState.player.diamond < item.price) {
+        showNotification(`💎 钻石不足！需要 ${item.price} 钻石`, '💎', 'warning');
+        return;
+    }
+
+    // 执行购买
+    switch (item.id) {
+        case 'premium_fertilizer':
+        case 'lucky_potion':
+        case 'auto_watering': {
+            // 时间制 buff
+            if (!GameState.spendDiamond(item.price)) return;
+            const buff = GameState.buffs[item.buffType];
+            buff.active = true;
+            buff.endTime = Date.now() + item.duration * 1000;
+            buff.value = item.buffValue;
+            const mins = Math.floor(item.duration / 60);
+            showNotification(`${item.icon} ${item.name} 已激活！持续${mins}分钟`, 'gold');
+            break;
+        }
+
+        case 'master_bait': {
+            // 次数制 buff
+            if (!GameState.spendDiamond(item.price)) return;
+            const fishBuff = GameState.buffs.fishLuck;
+            fishBuff.active = true;
+            fishBuff.charges = (fishBuff.charges || 0) + item.charges;
+            fishBuff.value = item.buffValue;
+            showNotification(`${item.icon} ${item.name} 已激活！剩余${fishBuff.charges}次`, 'gold');
+            break;
+        }
+
+        case 'animal_feed_pack': {
+            // 即时效果：所有成年动物立即产出
+            if (!GameState.spendDiamond(item.price)) return;
+            let count = 0;
+            GameState.animals.forEach(animal => {
+                if (animal.grown) {
+                    animal.hasProduct = true;
+                    animal.productProgress = 1;
+                    count++;
+                }
+            });
+            if (count > 0) {
+                showNotification(`${item.icon} ${count}只动物立即产出！`, 'gold');
+            } else {
+                showNotification('没有成年动物可以产出', '🐾', 'warning');
+            }
+            break;
+        }
+
+        case 'rare_seed_box': {
+            // 即时效果：随机获得紫色/金色种子
+            if (!GameState.spendDiamond(item.price)) return;
+            const rareCrops = Object.values(CROPS_DATA).filter(c => c.type === 'rare' || c.type === 'legendary');
+            const picked = rareCrops[Math.floor(Math.random() * rareCrops.length)];
+            if (picked) {
+                if (!GameState.inventory.seeds[picked.id]) GameState.inventory.seeds[picked.id] = 0;
+                GameState.inventory.seeds[picked.id] += 3;
+                showNotification(`${item.icon} 获得了 3 个 ${picked.icon} ${picked.name} 种子！`, 'gold');
+            }
+            break;
+        }
+
+        case 'land_expansion': {
+            // 永久效果：新增1块土地
+            if (GameState.plots.length >= 16) {
+                showNotification('土地已达上限（16块）！', '📜', 'warning');
+                return;
+            }
+            if (!GameState.spendDiamond(item.price)) return;
+            const newPlotId = GameState.plots.length;
+            GameState.plots.push({
+                id: newPlotId,
+                state: 'empty',
+                crop: null,
+                plantTime: 0,
+                growProgress: 0,
+                watered: false,
+                fertilized: false,
+                quality: 'normal',
+                cropQuality: 'normal'
+            });
+            GameState.extraPlots = (GameState.extraPlots || 0) + 1;
+            // 通知3D场景更新
+            if (typeof Scene3D !== 'undefined' && Scene3D.addPlotMesh) {
+                Scene3D.addPlotMesh(newPlotId);
+            }
+            showNotification(`${item.icon} 解锁了第 ${newPlotId + 1} 块土地！`, 'gold');
+            break;
+        }
+
+        default:
+            showNotification('未知商品！', '❓', 'warning');
+            return;
+    }
+
+    updateHUD();
+    GameState.save();
+
+    // 刷新商店 UI
+    if (typeof renderDiamondShop === 'function') {
+        renderDiamondShop();
+    }
 }

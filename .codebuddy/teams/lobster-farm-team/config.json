@@ -1,0 +1,43 @@
+{
+  "name": "lobster-farm-team",
+  "leadAgentId": "d76848df3b144a51b7324c6ce760374b",
+  "workspacePath": "/Users/gaokai/CodeBuddy/20260313102327",
+  "createdAt": "2026-03-13T09:26:06.927Z",
+  "options": {
+    "workspacePath": "/Users/gaokai/CodeBuddy/20260313102327",
+    "isAutoTeam": false
+  },
+  "members": [
+    {
+      "memberId": "team-lead@lobster-farm-team",
+      "name": "team-lead",
+      "role": "Team Lead - coordinates the team and interacts with the user"
+    },
+    {
+      "memberId": "lobster-producer@lobster-farm-team",
+      "name": "lobster-producer",
+      "role": "创建产品制作人角色"
+    },
+    {
+      "memberId": "lobster-planner@lobster-farm-team",
+      "name": "lobster-planner",
+      "role": "创建游戏策划角色"
+    },
+    {
+      "memberId": "lobster-ux@lobster-farm-team",
+      "name": "lobster-ux",
+      "role": "创建交互体验角色"
+    },
+    {
+      "memberId": "lobster-coder@lobster-farm-team",
+      "name": "lobster-coder",
+      "role": "创建程序员角色"
+    },
+    {
+      "memberId": "lobster-artist@lobster-farm-team",
+      "name": "lobster-artist",
+      "role": "创建美术指导角色"
+    }
+  ],
+  "isAutoTeam": false
+}

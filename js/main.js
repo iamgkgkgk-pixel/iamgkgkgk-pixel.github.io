@@ -15,6 +15,11 @@ function gameLoop(timestamp) {
     
     // 更新3D场景
     Scene3D.update(deltaTime);
+
+    // 更新交互增强系统
+    if (typeof InteractionEnhance !== 'undefined') {
+        InteractionEnhance.update(deltaTime);
+    }
     
     // 渲染
     Scene3D.render();
@@ -102,12 +107,77 @@ async function initGame() {
         // 每日重置检查
         checkDailyReset();
         
+        // 初始化新版每日任务
+        GameState.refreshDailyTasks();
+        
         // 初始化广告系统
         AdSystem.init();
         // 延迟2秒显示横幅广告
         setTimeout(() => AdSystem.showBanner(), 2000);
         // 每秒刷新广告冷却状态
         setInterval(() => AdSystem.updateCooldownUI(), 1000);
+
+        // 初始化加工系统
+        if (typeof CookingSystem !== 'undefined') {
+            CookingSystem.initState();
+        }
+
+        // 初始化社交系统
+        if (typeof SocialSystem !== 'undefined') {
+            SocialSystem.initState();
+        }
+
+        // 初始化订单系统
+        if (typeof OrderSystem !== 'undefined') {
+            OrderSystem.initState();
+        }
+
+        // 初始化装饰系统
+        if (typeof DecoSystem !== 'undefined') {
+            DecoSystem.initState();
+        }
+
+        // 初始化季节活动系统
+        if (typeof SeasonalEvents !== 'undefined') {
+            SeasonalEvents.initState();
+        }
+
+        // 初始化动物培育系统
+        if (typeof BreedingSystem !== 'undefined') {
+            BreedingSystem.initState();
+        }
+
+        // 初始化庆典系统
+        if (typeof CelebrationSystem !== 'undefined') {
+            CelebrationSystem.initState();
+        }
+
+        // 初始化交互增强系统
+        if (typeof InteractionEnhance !== 'undefined') {
+            InteractionEnhance.init();
+        }
+
+        // 初始化音效系统
+        if (typeof AudioSystem !== 'undefined') {
+            AudioSystem.init();
+            AudioSystem.createHUD();
+            AudioSystem.hookGameFunctions();
+            // 延迟启动BGM和环境音（等待用户首次交互激活AudioContext）
+            const startAudio = () => {
+                AudioSystem.resume();
+                AudioSystem.startBGM();
+                AudioSystem.startAmbience(GameState.gameTime.weather, GameState.gameTime.hour);
+                document.removeEventListener('click', startAudio);
+                document.removeEventListener('touchstart', startAudio);
+            };
+            document.addEventListener('click', startAudio, { once: false });
+            document.addEventListener('touchstart', startAudio, { once: false });
+        }
+
+        // 初始化新手引导系统（放在最后，等其他系统初始化完成）
+        if (typeof TutorialSystem !== 'undefined') {
+            TutorialSystem.init();
+        }
 
         // 欢迎消息
         setTimeout(() => {
@@ -143,6 +213,16 @@ function checkDailyReset() {
             animal.fedToday = false;
             animal.pettedToday = false;
         });
+
+        // 刷新新版每日任务
+        GameState.dailyTaskSystem.date = null;
+        GameState.refreshDailyTasks();
+
+        // 刷新订单
+        if (typeof OrderSystem !== 'undefined' && GameState.orders) {
+            GameState.orders.lastRefresh = null;
+            OrderSystem.refreshOrders();
+        }
         
         // 每周重置（周一）
         const dayOfWeek = new Date().getDay();

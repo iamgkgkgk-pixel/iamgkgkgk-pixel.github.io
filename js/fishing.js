@@ -262,6 +262,20 @@ const FishingSystem = {
         if (!GameState.player.totalFishCaught) GameState.player.totalFishCaught = 0;
         GameState.player.totalFishCaught++;
 
+        // 更新每日任务（钓鱼）& 成就
+        GameState.updateQuestProgress('fish');
+        GameState.checkAchievements();
+
+        // 钻石商店：钓鱼大师饵 buff 消耗次数
+        if (GameState.buffs.fishLuck && GameState.buffs.fishLuck.active && GameState.buffs.fishLuck.charges > 0) {
+            GameState.buffs.fishLuck.charges--;
+            if (GameState.buffs.fishLuck.charges <= 0) {
+                GameState.buffs.fishLuck.active = false;
+                GameState.buffs.fishLuck.value = 1;
+                showNotification('🪱 钓鱼大师饵已用完', 'info');
+            }
+        }
+
         // 录入图鉴
         Pokedex.unlock('fish', fish.id, { rarity: fish.rarity, firstTime: Date.now() });
 

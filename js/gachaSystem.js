@@ -276,6 +276,11 @@ const GachaSystem = {
         GameState.gacha.tokens -= 1;
         document.getElementById('gacha-token-count').textContent = GameState.gacha.tokens;
 
+        // 统计扭蛋次数 & 更新每日任务
+        GameState.player.totalGacha = (GameState.player.totalGacha || 0) + 1;
+        GameState.updateQuestProgress('gacha');
+        GameState.checkAchievements();
+
         // 抽取结果
         const result = this.rollItem();
         document.getElementById('gacha-panel').style.display = 'none';
