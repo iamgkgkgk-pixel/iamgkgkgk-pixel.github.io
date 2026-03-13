@@ -64,7 +64,7 @@ const PondSystem = {
         // 池底（深蓝绿色，略小于水面）
         const bottomShape = this._buildPondShape(0.92);
         const bottomExtGeo = new THREE.ShapeGeometry(bottomShape);
-        const bottomMat = new THREE.MeshLambertMaterial({ color: 0x2D5A5A, side: THREE.DoubleSide });
+        const bottomMat = new THREE.MeshStandardMaterial({ color: 0x2D5A5A, side: THREE.DoubleSide, roughness: 0.8, metalness: 0.0 });
         const bottom = new THREE.Mesh(bottomExtGeo, bottomMat);
         bottom.rotation.x = -Math.PI / 2;
         bottom.position.set(POND_CENTER.x, -0.05, POND_CENTER.z);
@@ -98,7 +98,7 @@ const PondSystem = {
         );
         shoreShape.holes.push(holePath);
         const shoreGeo = new THREE.ShapeGeometry(shoreShape);
-        const shoreMat = new THREE.MeshLambertMaterial({ color: 0x5C4033, side: THREE.DoubleSide });
+        const shoreMat = new THREE.MeshStandardMaterial({ color: 0x5C4033, side: THREE.DoubleSide, roughness: 0.8, metalness: 0.0 });
         const shore = new THREE.Mesh(shoreGeo, shoreMat);
         shore.rotation.x = -Math.PI / 2;
         shore.position.set(POND_CENTER.x, 0.001, POND_CENTER.z);
@@ -113,7 +113,7 @@ const PondSystem = {
         stonePositions.forEach(([ox, oz]) => {
             const r = 0.06 + Math.random() * 0.08;
             const stoneGeo = new THREE.SphereGeometry(r, 7, 5);
-            const stoneMat = new THREE.MeshLambertMaterial({ color: 0x888880 });
+            const stoneMat = new THREE.MeshStandardMaterial({ color: 0x888880, roughness: 0.8, metalness: 0.0 });
             const stone = new THREE.Mesh(stoneGeo, stoneMat);
             stone.scale.set(1, 0.55, 1);
             stone.position.set(
@@ -139,7 +139,7 @@ const PondSystem = {
             for (let i = 0; i < pos.count; i++) {
                 const h = 0.6 + Math.random() * 0.5;
                 const stemGeo = new THREE.CylinderGeometry(0.015, 0.02, h, 5);
-                const stemMat = new THREE.MeshLambertMaterial({ color: 0x8B7355 });
+                const stemMat = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.8, metalness: 0.0 });
                 const stem = new THREE.Mesh(stemGeo, stemMat);
                 stem.position.set(
                     (Math.random() - 0.5) * 0.4,
@@ -151,7 +151,7 @@ const PondSystem = {
 
                 // 穗头
                 const headGeo = new THREE.SphereGeometry(0.04, 6, 4);
-                const headMat = new THREE.MeshLambertMaterial({ color: 0x5C4A1E });
+                const headMat = new THREE.MeshStandardMaterial({ color: 0x5C4A1E, roughness: 0.8, metalness: 0.0 });
                 const reedHead = new THREE.Mesh(headGeo, headMat);
                 reedHead.scale.set(0.6, 2.0, 0.6);
                 reedHead.position.copy(stem.position);
@@ -175,7 +175,7 @@ const PondSystem = {
 
             // 木质小码头平台
             const dockGeo = new THREE.BoxGeometry(1.0, 0.08, 0.5);
-            const dockMat = new THREE.MeshLambertMaterial({ color: 0x8B6914 });
+            const dockMat = new THREE.MeshStandardMaterial({ color: 0x8B6914, roughness: 0.8, metalness: 0.0 });
             const dock = new THREE.Mesh(dockGeo, dockMat);
             dock.position.y = 0.04;
             dock.castShadow = true;
@@ -184,7 +184,7 @@ const PondSystem = {
             // 木板纹理（横条）
             for (let i = -2; i <= 2; i++) {
                 const plankGeo = new THREE.BoxGeometry(0.95, 0.01, 0.08);
-                const plankMat = new THREE.MeshLambertMaterial({ color: 0x7A5C10 });
+                const plankMat = new THREE.MeshStandardMaterial({ color: 0x7A5C10, roughness: 0.8, metalness: 0.0 });
                 const plank = new THREE.Mesh(plankGeo, plankMat);
                 plank.position.set(0, 0.085, i * 0.1);
                 group.add(plank);
@@ -192,7 +192,7 @@ const PondSystem = {
 
             // 钓鱼竿（斜插）
             const rodGeo = new THREE.CylinderGeometry(0.015, 0.02, 0.8, 5);
-            const rodMat = new THREE.MeshLambertMaterial({ color: 0x5C3A1E });
+            const rodMat = new THREE.MeshStandardMaterial({ color: 0x5C3A1E, roughness: 0.8, metalness: 0.0 });
             const rod = new THREE.Mesh(rodGeo, rodMat);
             rod.rotation.z = Math.PI / 6;
             rod.position.set(0.3, 0.45, 0);
@@ -245,10 +245,11 @@ const PondSystem = {
     _createFishShadows() {
         for (let i = 0; i < 3; i++) {
             const geo = new THREE.SphereGeometry(0.15 + Math.random() * 0.15, 8, 4);
-            const mat = new THREE.MeshLambertMaterial({
+            const mat = new THREE.MeshStandardMaterial({
                 color: 0x1A3A3A,
                 transparent: true,
-                opacity: 0.35
+                opacity: 0.35,
+                roughness: 0.8, metalness: 0.0
             });
             const shadow = new THREE.Mesh(geo, mat);
             shadow.scale.set(1, 0.2, 0.6);
@@ -280,15 +281,16 @@ const PondSystem = {
             const group = new THREE.Group();
             // 身体
             const bodyGeo = new THREE.CylinderGeometry(0.015, 0.01, 0.18, 5);
-            const bodyMat = new THREE.MeshLambertMaterial({ color: i === 0 ? 0x4488ff : 0x44cc88 });
+            const bodyMat = new THREE.MeshStandardMaterial({ color: i === 0 ? 0x4488ff : 0x44cc88, roughness: 0.5, metalness: 0.0 });
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             body.rotation.z = Math.PI / 2;
             group.add(body);
             // 翅膀
             [-1, 1].forEach(side => {
                 const wingGeo = new THREE.PlaneGeometry(0.18, 0.06);
-                const wingMat = new THREE.MeshLambertMaterial({
-                    color: 0xaaddff, transparent: true, opacity: 0.5, side: THREE.DoubleSide
+                const wingMat = new THREE.MeshStandardMaterial({
+                    color: 0xaaddff, transparent: true, opacity: 0.5, side: THREE.DoubleSide,
+                    roughness: 0.2, metalness: 0.0
                 });
                 const wing = new THREE.Mesh(wingGeo, wingMat);
                 wing.position.set(0, side * 0.08, 0);
@@ -316,19 +318,19 @@ const PondSystem = {
         const group = new THREE.Group();
         // 身体
         const bodyGeo = new THREE.SphereGeometry(0.08, 8, 6);
-        const bodyMat = new THREE.MeshLambertMaterial({ color: 0x4A7C3F });
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x4A7C3F, roughness: 0.8, metalness: 0.0 });
         const body = new THREE.Mesh(bodyGeo, bodyMat);
         body.scale.set(1, 0.7, 1.1);
         group.add(body);
         // 眼睛（凸出）
         [-0.05, 0.05].forEach(ex => {
             const eyeGeo = new THREE.SphereGeometry(0.025, 6, 6);
-            const eyeMat = new THREE.MeshLambertMaterial({ color: 0xFFD700 });
+            const eyeMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, roughness: 0.8, metalness: 0.0 });
             const eye = new THREE.Mesh(eyeGeo, eyeMat);
             eye.position.set(ex, 0.07, 0.04);
             group.add(eye);
             const pupilGeo = new THREE.SphereGeometry(0.012, 5, 5);
-            const pupilMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+            const pupilMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8, metalness: 0.0 });
             const pupil = new THREE.Mesh(pupilGeo, pupilMat);
             pupil.position.set(ex, 0.07, 0.06);
             group.add(pupil);

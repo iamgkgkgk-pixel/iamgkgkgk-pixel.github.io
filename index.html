@@ -19,119 +19,222 @@
     <style>
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #4CAF50;
+            --primary-light: #8BC34A;
+            --primary-dark: #2E7D32;
+            --gold: #ffd700;
+            --gold-warm: #ff8c00;
+            --diamond: #00bfff;
+            --bg-dark: rgba(12, 20, 12, 0.92);
+            --bg-glass: rgba(18, 32, 18, 0.85);
+            --border-soft: rgba(76, 175, 80, 0.25);
+            --border-glow: rgba(76, 175, 80, 0.5);
+            --text-primary: #f0f0f0;
+            --text-secondary: #a0a8a0;
+            --text-muted: #667066;
+            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --shadow-glow: 0 0 20px rgba(76, 175, 80, 0.15);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 24px;
+            --blur: blur(16px);
+        }
+
         body { 
-            background: #1a0a00; 
-            font-family: 'Microsoft YaHei', sans-serif;
+            background: #0a140a; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
             overflow: hidden;
             user-select: none;
+            color: var(--text-primary);
         }
         #gameCanvas { display: block; width: 100vw; height: 100vh; }
         
         /* HUD顶部栏 */
         #hud-top {
             position: fixed; top: 0; left: 0; right: 0;
-            height: 60px; background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
-            display: flex; align-items: center; padding: 0 15px; gap: 15px; z-index: 100;
+            height: 56px; 
+            background: linear-gradient(180deg, rgba(8,16,8,0.88) 0%, rgba(8,16,8,0.6) 70%, transparent 100%);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            display: flex; align-items: center; padding: 0 12px; gap: 10px; z-index: 100;
         }
         .hud-stat {
-            display: flex; align-items: center; gap: 5px;
-            background: rgba(0,0,0,0.5); border-radius: 20px;
-            padding: 5px 12px; border: 1px solid rgba(255,255,255,0.2);
+            display: flex; align-items: center; gap: 6px;
+            background: rgba(255,255,255,0.04); border-radius: var(--radius-lg);
+            padding: 5px 12px; border: 1px solid rgba(255,255,255,0.08);
+            transition: all 0.3s ease;
         }
-        .hud-stat .icon { font-size: 18px; }
-        .hud-stat .value { color: #fff; font-size: 14px; font-weight: bold; }
-        .hud-stat .label { color: #aaa; font-size: 11px; }
+        .hud-stat:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); }
+        .hud-stat .icon { font-size: 18px; filter: drop-shadow(0 0 4px rgba(255,255,255,0.2)); }
+        .hud-stat .value { color: #fff; font-size: 14px; font-weight: 600; letter-spacing: 0.5px; }
+        .hud-stat .label { color: var(--text-muted); font-size: 10px; letter-spacing: 0.5px; }
         
         /* 等级进度条 */
         #level-bar {
-            position: fixed; top: 65px; left: 15px;
-            background: rgba(0,0,0,0.6); border-radius: 10px;
-            padding: 8px 12px; z-index: 100; min-width: 200px;
-            border: 1px solid rgba(255,200,0,0.3);
+            position: fixed; top: 60px; left: 12px;
+            background: var(--bg-glass);
+            backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+            border-radius: var(--radius-md);
+            padding: 8px 14px; z-index: 100; min-width: 200px;
+            border: 1px solid var(--border-soft);
+            box-shadow: var(--shadow-glow);
         }
         #level-bar .level-info { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        #level-bar .level-num { color: #ffd700; font-size: 14px; font-weight: bold; }
-        #level-bar .level-title { color: #aaa; font-size: 12px; }
-        #xp-bar-bg { background: rgba(255,255,255,0.1); border-radius: 5px; height: 8px; }
-        #xp-bar { background: linear-gradient(90deg, #4CAF50, #8BC34A); border-radius: 5px; height: 8px; transition: width 0.5s; }
-        #xp-text { color: #aaa; font-size: 11px; margin-top: 3px; text-align: right; }
+        #level-bar .level-num { color: var(--gold); font-size: 14px; font-weight: 700; letter-spacing: 1px; }
+        #level-bar .level-title { color: var(--text-secondary); font-size: 12px; }
+        #xp-bar-bg { background: rgba(255,255,255,0.06); border-radius: 5px; height: 6px; overflow: hidden; }
+        #xp-bar { 
+            background: linear-gradient(90deg, var(--primary-dark), var(--primary), var(--primary-light)); 
+            border-radius: 5px; height: 6px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 8px rgba(76,175,80,0.4);
+            position: relative;
+        }
+        #xp-bar::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 60%);
+            border-radius: 5px;
+        }
+        #xp-text { color: var(--text-muted); font-size: 10px; margin-top: 4px; text-align: right; }
         
         /* 底部工具栏 */
         #toolbar {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 8px; z-index: 100;
+            position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 6px; z-index: 100;
+            background: rgba(8,16,8,0.75);
+            backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: var(--radius-xl); padding: 6px 10px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
         }
         .tool-btn {
-            width: 60px; height: 60px; border-radius: 12px;
-            background: rgba(0,0,0,0.7); border: 2px solid rgba(255,255,255,0.2);
+            width: 56px; height: 56px; border-radius: 14px;
+            background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.06);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.2s; color: white;
+            cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); color: white;
+            position: relative; overflow: hidden;
         }
-        .tool-btn:hover { border-color: #4CAF50; transform: translateY(-3px); background: rgba(76,175,80,0.3); }
-        .tool-btn.active { border-color: #ffd700; background: rgba(255,215,0,0.2); }
-        .tool-btn .tool-icon { font-size: 24px; }
-        .tool-btn .tool-name { font-size: 10px; color: #aaa; margin-top: 2px; }
+        .tool-btn::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 50% 30%, rgba(255,255,255,0.05), transparent 70%);
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .tool-btn:hover { 
+            border-color: rgba(76,175,80,0.4); transform: translateY(-3px); 
+            background: rgba(76,175,80,0.1); 
+            box-shadow: 0 6px 20px rgba(76,175,80,0.15);
+        }
+        .tool-btn:hover::before { opacity: 1; }
+        .tool-btn.active { 
+            border-color: rgba(255,215,0,0.5); 
+            background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,140,0,0.08));
+            box-shadow: 0 0 16px rgba(255,215,0,0.15), inset 0 1px 0 rgba(255,215,0,0.1);
+        }
+        .tool-btn .tool-icon { font-size: 22px; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); position: relative; z-index: 1; }
+        .tool-btn .tool-name { font-size: 9px; color: var(--text-muted); margin-top: 2px; position: relative; z-index: 1; }
+        .tool-btn.active .tool-name { color: var(--gold); }
         
         /* 右侧面板按钮 */
         #side-btns {
-            position: fixed; right: 15px; top: 50%; transform: translateY(-50%);
-            display: flex; flex-direction: column; gap: 10px; z-index: 100;
+            position: fixed; right: 12px; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 8px; z-index: 100;
         }
         .side-btn {
-            width: 50px; height: 50px; border-radius: 50%;
-            background: rgba(0,0,0,0.7); border: 2px solid rgba(255,255,255,0.2);
+            width: 48px; height: 48px; border-radius: 50%;
+            background: var(--bg-glass);
+            backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+            border: 1.5px solid rgba(255,255,255,0.08);
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 22px; transition: all 0.2s;
+            cursor: pointer; font-size: 20px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
-        .side-btn:hover { border-color: #4CAF50; transform: scale(1.1); }
+        .side-btn:hover { 
+            border-color: var(--border-glow); transform: scale(1.1); 
+            box-shadow: 0 4px 20px rgba(76,175,80,0.2), var(--shadow-glow);
+            background: rgba(76,175,80,0.15);
+        }
         .side-btn { position: relative; }
         /* 小红点提醒 */
         .red-dot {
-            position: absolute; top: 2px; right: 2px;
+            position: absolute; top: 1px; right: 1px;
             width: 10px; height: 10px; border-radius: 50%;
-            background: #ff3b30; border: 2px solid #1a1a2e;
+            background: #ff3b30; border: 2px solid rgba(12,20,12,0.9);
             pointer-events: none;
+            box-shadow: 0 0 6px rgba(255,59,48,0.5);
+            animation: redDotPulse 2s ease-in-out infinite;
+        }
+        @keyframes redDotPulse {
+            0%, 100% { box-shadow: 0 0 6px rgba(255,59,48,0.5); }
+            50% { box-shadow: 0 0 12px rgba(255,59,48,0.8); }
         }
         
         /* 弹窗通用样式 */
 
         .modal {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7); z-index: 200;
+            background: rgba(0,0,0,0.6); z-index: 200;
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
             display: flex; align-items: center; justify-content: center;
             display: none;
         }
-        .modal.show { display: flex; }
+        .modal.show { display: flex; animation: modalBgFade 0.3s ease; }
+        @keyframes modalBgFade { from { opacity: 0; } to { opacity: 1; } }
         .modal-box {
-            background: linear-gradient(135deg, #1a2a1a, #0d1a0d);
-            border: 2px solid #4CAF50; border-radius: 16px;
-            padding: 20px; min-width: 320px; max-width: 90vw; max-height: 85vh;
+            background: linear-gradient(160deg, rgba(22,38,22,0.95), rgba(12,22,12,0.98));
+            backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-xl);
+            padding: 24px; min-width: 320px; max-width: 90vw; max-height: 85vh;
             overflow-y: auto; color: white;
+            box-shadow: var(--shadow-soft), var(--shadow-glow), inset 0 1px 0 rgba(255,255,255,0.03);
+            animation: modalBoxPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes modalBoxPop {
+            0% { transform: scale(0.9) translateY(20px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
         }
         .modal-title {
-            font-size: 20px; font-weight: bold; color: #4CAF50;
-            margin-bottom: 15px; text-align: center;
-            border-bottom: 1px solid rgba(76,175,80,0.3); padding-bottom: 10px;
+            font-size: 18px; font-weight: 700; color: var(--text-primary);
+            margin-bottom: 16px; text-align: center;
+            padding-bottom: 12px; letter-spacing: 1px;
+            border-bottom: 1px solid rgba(76,175,80,0.15);
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         .modal-close {
-            position: absolute; top: 15px; right: 15px;
-            background: rgba(255,0,0,0.3); border: none; color: white;
-            width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
-            font-size: 16px; display: flex; align-items: center; justify-content: center;
+            position: absolute; top: 12px; right: 12px;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            color: var(--text-muted); width: 32px; height: 32px; border-radius: 50%; 
+            cursor: pointer; font-size: 14px; 
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
         }
+        .modal-close:hover { background: rgba(255,60,48,0.15); border-color: rgba(255,60,48,0.3); color: #ff6b6b; }
         
         /* 商店 */
         .shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .shop-item {
-            background: rgba(255,255,255,0.05); border-radius: 10px;
-            padding: 12px; text-align: center; cursor: pointer;
-            border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s;
+            background: rgba(255,255,255,0.02); border-radius: var(--radius-md);
+            padding: 14px; text-align: center; cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.05); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden;
         }
-        .shop-item:hover { border-color: #4CAF50; background: rgba(76,175,80,0.1); }
-        .shop-item .item-icon { font-size: 32px; margin-bottom: 5px; }
-        .shop-item .item-name { font-size: 12px; color: #ddd; }
-        .shop-item .item-price { font-size: 13px; color: #ffd700; margin-top: 3px; }
-        .shop-item .item-time { font-size: 11px; color: #aaa; }
+        .shop-item::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+        }
+        .shop-item:hover { 
+            border-color: var(--border-soft); 
+            background: rgba(76,175,80,0.06);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2), 0 0 12px rgba(76,175,80,0.08);
+        }
+        .shop-item .item-icon { font-size: 32px; margin-bottom: 6px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+        .shop-item .item-name { font-size: 12px; color: var(--text-primary); font-weight: 500; }
+        .shop-item .item-price { font-size: 13px; color: var(--gold); margin-top: 4px; font-weight: 600; }
+        .shop-item .item-time { font-size: 11px; color: var(--text-muted); }
         .shop-item .item-locked { font-size: 11px; color: #f44336; }
         
         /* 背包 */
@@ -149,15 +252,30 @@
         
         /* 任务面板 */
         .quest-item {
-            background: rgba(255,255,255,0.05); border-radius: 10px;
-            padding: 12px; margin-bottom: 10px;
-            border-left: 3px solid #4CAF50;
+            background: rgba(255,255,255,0.03); border-radius: var(--radius-md);
+            padding: 14px; margin-bottom: 10px;
+            border-left: 3px solid var(--primary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-left: 3px solid var(--primary);
         }
-        .quest-item .quest-name { font-size: 14px; color: #ddd; font-weight: bold; }
-        .quest-item .quest-desc { font-size: 12px; color: #aaa; margin: 5px 0; }
-        .quest-progress-bg { background: rgba(255,255,255,0.1); border-radius: 5px; height: 6px; }
-        .quest-progress { background: #4CAF50; border-radius: 5px; height: 6px; transition: width 0.5s; }
-        .quest-reward { font-size: 12px; color: #ffd700; margin-top: 5px; }
+        .quest-item:hover { 
+            background: rgba(76,175,80,0.04); border-color: rgba(255,255,255,0.1);
+            border-left-color: var(--primary-light);
+            transform: translateX(4px);
+        }
+        .quest-item .quest-name { font-size: 14px; color: var(--text-primary); font-weight: 600; letter-spacing: 0.3px; }
+        .quest-item .quest-desc { font-size: 12px; color: var(--text-secondary); margin: 6px 0; line-height: 1.4; }
+        .quest-progress-bg { background: rgba(255,255,255,0.06); border-radius: 4px; height: 5px; overflow: hidden; }
+        .quest-progress { 
+            background: linear-gradient(90deg, var(--primary-dark), var(--primary), var(--primary-light)); 
+            border-radius: 4px; height: 5px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 6px rgba(76,175,80,0.3);
+        }
+        .quest-reward { 
+            font-size: 12px; color: var(--gold); margin-top: 6px; font-weight: 600;
+            display: flex; align-items: center; gap: 4px;
+        }
         
         /* 成就面板 */
         .achievement-item {
@@ -176,21 +294,30 @@
         #notifications {
             position: fixed; top: 80px; left: 50%;
             transform: translateX(-50%);
-            z-index: 300; display: flex; flex-direction: column; gap: 8px;
-            align-items: center; max-width: 320px;
+            z-index: 300; display: flex; flex-direction: column; gap: 10px;
+            align-items: center; max-width: 340px;
             pointer-events: none;
         }
         .notification {
-            background: rgba(0,0,0,0.85); border-radius: 10px;
-            padding: 10px 15px; color: white; font-size: 13px;
-            border-left: 3px solid #4CAF50; max-width: 300px;
-            animation: slideDown 0.3s ease; display: flex; align-items: center; gap: 8px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border-radius: var(--radius-md);
+            padding: 12px 16px; color: var(--text-primary); font-size: 13px;
+            border: 1px solid rgba(76,175,80,0.2); border-left: 3px solid var(--primary); 
+            max-width: 320px;
+            animation: notifSlideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); 
+            display: flex; align-items: center; gap: 10px;
             pointer-events: auto;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.03);
+            font-weight: 500; letter-spacing: 0.2px;
         }
-        .notification.warning { border-left-color: #ff9800; }
-        .notification.error { border-left-color: #f44336; }
-        .notification.gold { border-left-color: #ffd700; }
+        .notification.warning { border-left-color: #ff9800; border-color: rgba(255,152,0,0.15); }
+        .notification.error { border-left-color: #ff4444; border-color: rgba(255,68,68,0.15); }
+        .notification.gold { border-left-color: var(--gold); border-color: rgba(255,215,0,0.15); box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 16px rgba(255,215,0,0.08); }
+        @keyframes notifSlideDown { 
+            from { transform: translateY(-20px) scale(0.95); opacity: 0; } 
+            to { transform: translateY(0) scale(1); opacity: 1; } 
+        }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes slideOut { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-20px); opacity: 0; } }
         @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -218,18 +345,97 @@
             display: none; min-width: 160px;
         }
         
-        /* 加载界面 */
+        /* ══════════════ 加载界面（沉浸田园风） ══════════════ */
         #loading {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(135deg, #0d2b0d, #1a4a1a);
+            background: 
+                radial-gradient(ellipse at 50% 120%, rgba(76,175,80,0.15) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(255,215,0,0.08) 0%, transparent 40%),
+                linear-gradient(175deg, #0a1f0a 0%, #132d13 30%, #1a3a1a 60%, #0d2b0d 100%);
             z-index: 1000; display: flex; flex-direction: column;
             align-items: center; justify-content: center; color: white;
+            overflow: hidden;
         }
-        #loading h1 { font-size: 48px; color: #4CAF50; text-shadow: 0 0 20px rgba(76,175,80,0.5); margin-bottom: 10px; }
-        #loading p { color: #aaa; font-size: 16px; margin-bottom: 30px; }
-        #loading-bar-bg { width: 300px; height: 8px; background: rgba(255,255,255,0.1); border-radius: 5px; }
-        #loading-bar { height: 8px; background: linear-gradient(90deg, #4CAF50, #8BC34A); border-radius: 5px; width: 0%; transition: width 0.3s; }
-        #loading-text { color: #aaa; font-size: 13px; margin-top: 10px; }
+        /* 浮动粒子 */
+        #loading::before, #loading::after {
+            content: ''; position: absolute; border-radius: 50%;
+            animation: loadingFloat 6s ease-in-out infinite;
+            pointer-events: none;
+        }
+        #loading::before {
+            width: 200px; height: 200px; top: 10%; left: 10%;
+            background: radial-gradient(circle, rgba(76,175,80,0.06) 0%, transparent 70%);
+            animation-delay: 0s;
+        }
+        #loading::after {
+            width: 300px; height: 300px; bottom: 10%; right: 5%;
+            background: radial-gradient(circle, rgba(255,215,0,0.04) 0%, transparent 70%);
+            animation-delay: -3s;
+        }
+        @keyframes loadingFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(20px, -20px) scale(1.1); }
+        }
+        /* Logo区 */
+        #loading .loading-logo {
+            font-size: 56px; margin-bottom: 8px;
+            animation: loadingLogoPulse 2s ease-in-out infinite;
+            filter: drop-shadow(0 0 30px rgba(76,175,80,0.4));
+        }
+        @keyframes loadingLogoPulse {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 30px rgba(76,175,80,0.4)); }
+            50% { transform: scale(1.05); filter: drop-shadow(0 0 40px rgba(76,175,80,0.6)); }
+        }
+        #loading h1 { 
+            font-size: 42px; color: #fff; 
+            text-shadow: 0 0 40px rgba(76,175,80,0.5), 0 2px 10px rgba(0,0,0,0.5);
+            margin-bottom: 6px; letter-spacing: 6px;
+            background: linear-gradient(135deg, #4CAF50, #8BC34A, #FFD700);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        #loading .loading-subtitle { 
+            color: rgba(255,255,255,0.5); font-size: 13px; letter-spacing: 8px;
+            text-transform: uppercase; margin-bottom: 40px;
+        }
+        /* 进度条 */
+        #loading-bar-bg { 
+            width: 280px; height: 4px; 
+            background: rgba(255,255,255,0.06); border-radius: 2px;
+            position: relative; overflow: hidden;
+        }
+        #loading-bar-bg::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+            animation: loadingShimmer 2s ease infinite;
+        }
+        @keyframes loadingShimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        #loading-bar { 
+            height: 4px; border-radius: 2px; width: 0%; 
+            background: linear-gradient(90deg, #2E7D32, #4CAF50, #8BC34A, #FFD700);
+            box-shadow: 0 0 12px rgba(76,175,80,0.5);
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        #loading-bar::after {
+            content: ''; position: absolute; right: 0; top: -2px;
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #8BC34A;
+            box-shadow: 0 0 10px rgba(139,195,74,0.8);
+        }
+        #loading-text { 
+            color: rgba(255,255,255,0.35); font-size: 12px; margin-top: 16px;
+            letter-spacing: 2px;
+        }
+        /* 底部版权 */
+        #loading .loading-footer {
+            position: absolute; bottom: 30px;
+            color: rgba(255,255,255,0.15); font-size: 11px;
+            letter-spacing: 1px;
+        }
         
         /* 签到面板 */
         .checkin-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
@@ -283,28 +489,40 @@
         
         /* 按钮样式 */
         .btn-primary {
-            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             border: none; color: white; padding: 10px 20px;
-            border-radius: 8px; cursor: pointer; font-size: 14px;
-            transition: all 0.2s; font-family: inherit;
+            border-radius: var(--radius-sm); cursor: pointer; font-size: 14px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); font-family: inherit;
+            font-weight: 600; letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(76,175,80,0.3);
         }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(76,175,80,0.4); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(76,175,80,0.4); }
+        .btn-primary:active { transform: translateY(0) scale(0.98); }
         .btn-gold {
-            background: linear-gradient(135deg, #ffd700, #ff8c00);
-            border: none; color: white; padding: 10px 20px;
-            border-radius: 8px; cursor: pointer; font-size: 14px;
-            transition: all 0.2s; font-family: inherit;
+            background: linear-gradient(135deg, var(--gold), var(--gold-warm));
+            border: none; color: #1a0a00; padding: 10px 20px;
+            border-radius: var(--radius-sm); cursor: pointer; font-size: 14px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); font-family: inherit;
+            font-weight: 700; letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(255,215,0,0.3);
         }
-        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,215,0,0.4); }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,215,0,0.4); }
+        .btn-gold:active { transform: translateY(0) scale(0.98); }
         
         /* 标签页 */
-        .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+        .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
         .tab-btn {
-            padding: 6px 14px; border-radius: 8px; cursor: pointer;
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            color: #aaa; font-size: 13px; transition: all 0.2s; font-family: inherit;
+            padding: 7px 14px; border-radius: 20px; cursor: pointer;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            color: var(--text-muted); font-size: 12px; transition: all 0.25s; font-family: inherit;
+            font-weight: 500; white-space: nowrap;
         }
-        .tab-btn.active { background: rgba(76,175,80,0.3); border-color: #4CAF50; color: white; }
+        .tab-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
+        .tab-btn.active { 
+            background: linear-gradient(135deg, rgba(76,175,80,0.2), rgba(76,175,80,0.1));
+            border-color: var(--border-soft); color: var(--primary-light);
+            box-shadow: 0 0 12px rgba(76,175,80,0.1);
+        }
         
         /* 能量条 */
         #energy-bar {
@@ -320,18 +538,37 @@
         
         /* 动物卡片 */
         .animal-card {
-            background: rgba(255,255,255,0.05); border-radius: 10px;
-            padding: 12px; margin-bottom: 10px; display: flex; gap: 12px;
-            border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: all 0.2s;
+            background: rgba(255,255,255,0.03); border-radius: var(--radius-md);
+            padding: 14px; margin-bottom: 10px; display: flex; gap: 14px;
+            border: 1px solid rgba(255,255,255,0.06); cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden;
         }
-        .animal-card:hover { border-color: #ff9800; background: rgba(255,165,0,0.1); }
-        .animal-card .animal-icon { font-size: 36px; }
+        .animal-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255,165,0,0.3), transparent);
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .animal-card:hover { 
+            border-color: rgba(255,165,0,0.4); background: rgba(255,165,0,0.05);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255,165,0,0.1);
+        }
+        .animal-card:hover::before { opacity: 1; }
+        .animal-card .animal-icon { 
+            font-size: 38px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+            min-width: 44px; display: flex; align-items: center; justify-content: center;
+        }
         .animal-card .animal-info { flex: 1; }
-        .animal-card .animal-name { font-size: 14px; color: #ddd; font-weight: bold; }
-        .animal-card .animal-type { font-size: 11px; color: #aaa; }
-        .animal-card .animal-mood { font-size: 12px; margin-top: 5px; }
-        .mood-bar-bg { background: rgba(255,255,255,0.1); border-radius: 5px; height: 5px; margin-top: 3px; }
-        .mood-bar { background: #ff9800; border-radius: 5px; height: 5px; }
+        .animal-card .animal-name { font-size: 14px; color: var(--text-primary); font-weight: 600; }
+        .animal-card .animal-type { font-size: 11px; color: var(--text-muted); letter-spacing: 0.3px; }
+        .animal-card .animal-mood { font-size: 12px; margin-top: 6px; color: var(--text-secondary); }
+        .mood-bar-bg { background: rgba(255,255,255,0.06); border-radius: 4px; height: 4px; margin-top: 4px; overflow: hidden; }
+        .mood-bar { 
+            background: linear-gradient(90deg, #ff6b35, #ff9800, #ffc107); 
+            border-radius: 4px; height: 4px; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 6px rgba(255,152,0,0.3);
+        }
         
         /* 排行榜 */
         .rank-item {
@@ -428,27 +665,32 @@
         #milestone-percent { font-size: 13px; color: #aaa; margin-top: 5px; }
         
         /* 图鉴面板 */
-        .pokedex-header { margin-bottom: 15px; }
-        .pokedex-progress-text { font-size: 13px; color: #aaa; margin-bottom: 6px; }
-        .pokedex-progress-bg { background: rgba(255,255,255,0.1); border-radius: 5px; height: 8px; margin-bottom: 10px; }
-        .pokedex-progress-bar { background: linear-gradient(90deg, #4CAF50, #FFD700); border-radius: 5px; height: 8px; transition: width 0.5s; }
-        .pokedex-milestones { display: flex; gap: 10px; justify-content: center; margin-bottom: 5px; }
-        .milestone-dot { font-size: 20px; opacity: 0.3; transition: opacity 0.3s; }
-        .milestone-dot.done { opacity: 1; }
-        .pokedex-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        .pokedex-entry {
-            background: rgba(255,255,255,0.05); border-radius: 10px;
-            padding: 10px; text-align: center; cursor: pointer;
-            transition: all 0.2s; min-height: 80px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        .pokedex-header { margin-bottom: 16px; }
+        .pokedex-progress-text { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+        .pokedex-progress-bg { background: rgba(255,255,255,0.06); border-radius: 4px; height: 6px; margin-bottom: 10px; overflow: hidden; }
+        .pokedex-progress-bar { 
+            background: linear-gradient(90deg, var(--primary), var(--primary-light), var(--gold)); 
+            border-radius: 4px; height: 6px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 8px rgba(76,175,80,0.3);
         }
-        .pokedex-entry:hover { transform: scale(1.05); }
-        .pokedex-entry.locked { opacity: 0.6; }
-        .pokedex-entry .entry-icon { font-size: 28px; margin-bottom: 4px; }
-        .pokedex-entry .entry-silhouette { filter: grayscale(1) brightness(0.3); }
-        .pokedex-entry .entry-name { font-size: 11px; color: #ddd; }
-        .pokedex-entry .entry-time { font-size: 10px; color: #666; }
-        .pokedex-entry .entry-hint { font-size: 10px; color: #555; margin-top: 3px; }
+        .pokedex-milestones { display: flex; gap: 10px; justify-content: center; margin-bottom: 6px; }
+        .milestone-dot { font-size: 20px; opacity: 0.25; transition: all 0.3s; }
+        .milestone-dot.done { opacity: 1; filter: drop-shadow(0 0 6px rgba(255,215,0,0.4)); }
+        .pokedex-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .pokedex-entry {
+            background: rgba(255,255,255,0.03); border-radius: var(--radius-md);
+            padding: 12px 8px; text-align: center; cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); min-height: 84px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .pokedex-entry:hover { transform: translateY(-3px); border-color: var(--border-soft); box-shadow: 0 4px 16px rgba(76,175,80,0.1); }
+        .pokedex-entry.locked { opacity: 0.5; }
+        .pokedex-entry .entry-icon { font-size: 30px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+        .pokedex-entry .entry-silhouette { filter: grayscale(1) brightness(0.2); }
+        .pokedex-entry .entry-name { font-size: 11px; color: var(--text-primary); font-weight: 500; }
+        .pokedex-entry .entry-time { font-size: 10px; color: var(--text-muted); }
+        .pokedex-entry .entry-hint { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
         
         /* 钓鱼面板 */
         #qte-canvas { border-radius: 50%; background: rgba(0,0,0,0.3); cursor: pointer; display: block; margin: 0 auto; }
@@ -471,10 +713,14 @@
         }
         
         /* 滚动条美化 */
-        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar { width: 5px; }
 
-        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
-        ::-webkit-scrollbar-thumb { background: rgba(76,175,80,0.5); border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { 
+            background: rgba(76,175,80,0.3); border-radius: 3px; 
+            transition: background 0.3s;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(76,175,80,0.5); }
 
         /* ══════════════ 扭蛋机系统样式 ══════════════ */
 
@@ -485,33 +731,43 @@
             display: none; align-items: center; justify-content: center;
         }
         .gacha-panel-box {
-            background: linear-gradient(135deg, #1a0a00, #2a1500);
-            border: 2px solid #b8860b; border-radius: 20px;
+            background: linear-gradient(160deg, rgba(30,18,5,0.96), rgba(42,25,5,0.98));
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(184,134,11,0.4); border-radius: var(--radius-xl);
             padding: 30px; min-width: 320px; max-width: 380px;
             text-align: center; color: white; position: relative;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 30px rgba(184,134,11,0.08);
         }
-        .gacha-panel-title { font-size: 22px; font-weight: bold; color: #ffd700; margin-bottom: 8px; }
-        .gacha-panel-subtitle { font-size: 13px; color: #aaa; margin-bottom: 20px; }
+        .gacha-panel-title { 
+            font-size: 22px; font-weight: 800; margin-bottom: 8px; letter-spacing: 1px;
+            background: linear-gradient(135deg, #ffd700, #ffed4a, #b8860b);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .gacha-panel-subtitle { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
         .gacha-token-display {
-            background: rgba(255,215,0,0.1); border: 1px solid #b8860b;
-            border-radius: 12px; padding: 12px; margin-bottom: 20px;
-            font-size: 18px; color: #ffd700;
+            background: rgba(255,215,0,0.06); border: 1px solid rgba(184,134,11,0.3);
+            border-radius: var(--radius-md); padding: 14px; margin-bottom: 20px;
+            font-size: 18px; color: var(--gold); font-weight: 700;
         }
-        .gacha-season-label { font-size: 12px; color: #88ccff; margin-bottom: 15px; }
+        .gacha-season-label { font-size: 12px; color: #88ccff; margin-bottom: 15px; font-weight: 500; }
         .gacha-btn {
-            background: linear-gradient(135deg, #b8860b, #ffd700);
-            border: none; border-radius: 12px; padding: 14px 30px;
-            font-size: 16px; font-weight: bold; color: #1a0a00;
+            background: linear-gradient(135deg, #b8860b, #daa520, #ffd700);
+            border: none; border-radius: var(--radius-md); padding: 14px 30px;
+            font-size: 16px; font-weight: 700; color: #1a0a00;
             cursor: pointer; width: 100%; margin-bottom: 10px;
-            transition: all 0.2s;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 12px rgba(255,215,0,0.2);
+            letter-spacing: 0.5px;
         }
-        .gacha-btn:hover { transform: scale(1.03); box-shadow: 0 4px 20px rgba(255,215,0,0.4); }
-        .gacha-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .gacha-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(255,215,0,0.35); }
+        .gacha-btn:active { transform: translateY(0) scale(0.98); }
+        .gacha-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
         .gacha-close-btn {
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 10px; padding: 10px; font-size: 14px; color: #aaa;
-            cursor: pointer; width: 100%;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--radius-md); padding: 10px; font-size: 14px; color: var(--text-muted);
+            cursor: pointer; width: 100%; transition: all 0.2s;
         }
+        .gacha-close-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-secondary); }
 
         /* 扭蛋动画层 */
         #gacha-anim-overlay {
@@ -599,9 +855,9 @@
         .gacha-reveal-info {
             position: relative; z-index: 2; text-align: center; margin-top: 20px;
         }
-        .gacha-item-name { font-size: 24px; font-weight: bold; color: #fff; margin-bottom: 6px; }
-        .gacha-item-rarity { font-size: 16px; margin-bottom: 8px; }
-        .gacha-item-desc { font-size: 13px; color: #aaa; max-width: 280px; }
+        .gacha-item-name { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: 1px; }
+        .gacha-item-rarity { font-size: 16px; margin-bottom: 8px; font-weight: 600; }
+        .gacha-item-desc { font-size: 13px; color: var(--text-secondary); max-width: 280px; line-height: 1.4; }
         .gacha-confirm-btn {
             position: relative; z-index: 2; margin-top: 25px;
             background: linear-gradient(135deg, #b8860b, #ffd700);
@@ -657,6 +913,381 @@
         .shop-item:hover .item-price[style*="00bfff"] {
             text-shadow: 0 0 8px rgba(0,191,255,0.6);
         }
+
+        /* ══════════════ 渐进式解锁系统样式 ══════════════ */
+        
+        /* 解锁动画遮罩 */
+        #unlock-anim-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 800; display: none;
+            align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .unlock-anim-bg {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse at center, rgba(255,215,0,0.25) 0%, rgba(0,0,0,0.92) 60%);
+        }
+        .unlock-anim-content {
+            position: relative; z-index: 2;
+            text-align: center;
+            animation: unlockContentPop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .unlock-anim-rays {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 300px; height: 300px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,215,0,0.15) 0%, transparent 70%);
+            animation: unlockRaysSpin 4s linear infinite;
+        }
+        .unlock-anim-lock {
+            font-size: 36px; margin-bottom: 5px;
+            animation: unlockLockShake 0.6s ease 0.3s;
+        }
+        .unlock-anim-icon {
+            font-size: 72px; margin: 10px 0;
+            filter: drop-shadow(0 0 20px rgba(255,215,0,0.6));
+            animation: unlockIconBounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s both;
+        }
+        .unlock-anim-title {
+            font-size: 14px; color: #ffd700; letter-spacing: 4px;
+            text-transform: uppercase; margin-bottom: 8px;
+            animation: unlockFadeIn 0.5s ease 0.8s both;
+        }
+        .unlock-anim-name {
+            font-size: 28px; font-weight: bold; color: #fff;
+            text-shadow: 0 0 20px rgba(255,215,0,0.5);
+            animation: unlockFadeIn 0.5s ease 1s both;
+        }
+        .unlock-anim-desc {
+            font-size: 14px; color: #ccc; margin-top: 8px;
+            animation: unlockFadeIn 0.5s ease 1.2s both;
+        }
+        .unlock-anim-reward {
+            font-size: 13px; color: #ffd700;
+            margin-top: 12px; padding: 6px 16px;
+            background: rgba(255,215,0,0.1); border-radius: 20px;
+            border: 1px solid rgba(255,215,0,0.3);
+            display: inline-block;
+            animation: unlockFadeIn 0.5s ease 1.4s both;
+        }
+        .unlock-anim-hint {
+            font-size: 11px; color: #555; margin-top: 20px;
+            animation: unlockFadeIn 0.5s ease 2s both;
+        }
+        @keyframes unlockContentPop {
+            0% { transform: scale(0); opacity: 0; }
+            60% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes unlockRaysSpin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes unlockLockShake {
+            0%, 100% { transform: rotate(0); }
+            25% { transform: rotate(-15deg); }
+            50% { transform: rotate(15deg); }
+            75% { transform: rotate(-10deg); }
+        }
+        @keyframes unlockIconBounce {
+            0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+            60% { transform: scale(1.3) rotate(5deg); }
+            100% { transform: scale(1) rotate(0); opacity: 1; }
+        }
+        @keyframes unlockFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 抽屉锁定项 */
+        .drawer-item-locked {
+            opacity: 0.6;
+            border: 1px dashed rgba(255,255,255,0.1) !important;
+            background: rgba(0,0,0,0.5) !important;
+        }
+        .drawer-item-locked:hover {
+            border-color: rgba(255,215,0,0.3) !important;
+            background: rgba(255,215,0,0.05) !important;
+            transform: none;
+        }
+        .drawer-item-near {
+            opacity: 0.8;
+            border-color: rgba(255,215,0,0.2) !important;
+            animation: nearUnlockPulse 2s ease-in-out infinite;
+        }
+        @keyframes nearUnlockPulse {
+            0%, 100% { box-shadow: none; }
+            50% { box-shadow: 0 0 8px rgba(255,215,0,0.15); }
+        }
+        .drawer-item-lock {
+            font-size: 12px;
+            margin-left: auto;
+        }
+        .drawer-item-level-hint {
+            font-size: 10px;
+            color: #666;
+            margin-left: 2px;
+        }
+        
+        /* 右侧面板锁定按钮 */
+        .side-btn-locked {
+            opacity: 0.5;
+            border: 2px dashed rgba(255,255,255,0.1) !important;
+            position: relative;
+        }
+        .side-btn-locked:hover {
+            opacity: 0.7;
+            border-color: rgba(255,215,0,0.3) !important;
+        }
+        .side-btn-lock-badge {
+            position: absolute;
+            bottom: -2px; right: -2px;
+            font-size: 10px;
+        }
+        
+        /* 工具栏锁定覆盖层 */
+        .tool-lock-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            border-radius: 12px;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            font-size: 14px; color: #888;
+            z-index: 2;
+        }
+        
+        /* 解锁提示条 */
+        #unlock-hint-bar {
+            position: fixed;
+            top: 115px; left: 15px;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,215,0,0.25);
+            border-radius: 20px;
+            padding: 6px 14px;
+            display: none;
+            align-items: center; gap: 8px;
+            z-index: 100;
+            animation: hintSlideIn 0.4s ease;
+            font-size: 12px; color: #ccc;
+        }
+        .unlock-hint-icon { font-size: 16px; }
+        .unlock-hint-text { white-space: nowrap; }
+        .unlock-hint-text strong { color: #ffd700; }
+        @keyframes hintSlideIn {
+            from { transform: translateX(-30px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        /* 路线图时间轴 */
+        .roadmap-timeline {
+            position: relative;
+            padding-left: 40px;
+        }
+        .roadmap-timeline::before {
+            content: '';
+            position: absolute;
+            left: 18px; top: 0; bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #4CAF50, #ffd700, #333);
+        }
+        .roadmap-level-group {
+            position: relative;
+            margin-bottom: 15px;
+            padding: 8px 0;
+        }
+        .roadmap-level-marker {
+            position: absolute;
+            left: -40px; top: 50%;
+            transform: translateY(-50%);
+            width: 36px; height: 22px;
+            border-radius: 11px;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        .roadmap-unlocked .roadmap-level-marker {
+            border-color: #4CAF50;
+        }
+        .roadmap-current .roadmap-level-marker {
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255,215,0,0.3);
+        }
+        .roadmap-features {
+            display: flex; flex-wrap: wrap; gap: 8px;
+        }
+        .roadmap-feature-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 8px 14px;
+            display: flex; align-items: center; gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+        .roadmap-feature-card:hover {
+            border-color: rgba(255,215,0,0.3);
+            background: rgba(255,215,0,0.05);
+            transform: translateX(3px);
+        }
+        .roadmap-card-unlocked {
+            border-color: rgba(76,175,80,0.2) !important;
+            background: rgba(76,175,80,0.05) !important;
+        }
+        .roadmap-card-unlocked:hover {
+            border-color: rgba(76,175,80,0.4) !important;
+            background: rgba(76,175,80,0.1) !important;
+        }
+        .roadmap-feature-icon { font-size: 20px; }
+        .roadmap-feature-name { font-size: 12px; }
+        
+        @media (max-width: 600px) {
+            #unlock-hint-bar { top: 55px; left: 10px; font-size: 11px; padding: 4px 10px; }
+            .unlock-anim-icon { font-size: 56px; }
+            .unlock-anim-name { font-size: 22px; }
+            .roadmap-timeline { padding-left: 35px; }
+        }
+        
+        /* ══════════════ 渐进式解锁样式结束 ══════════════ */
+
+        /* ══════════════ 爆品升级系统 (ViralBoost) ══════════════ */
+
+        /* Combo连击显示 */
+        #combo-display {
+            position: fixed; top: 20%; left: 50%; transform: translateX(-50%);
+            z-index: 450; display: none;
+            align-items: center; justify-content: center;
+            flex-direction: column;
+            pointer-events: none;
+            text-align: center;
+        }
+
+        /* 离线收益弹窗行 */
+        .vb-reward-row {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .vb-reward-row:last-child { border-bottom: none; }
+
+        /* 收获飘字 */
+        .vb-harvest-float {
+            animation: vb-harvestFadeUp 2s ease forwards;
+        }
+        @keyframes vb-harvestFadeUp {
+            0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            70% { opacity: 1; transform: translateX(-50%) translateY(-40px); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-80px); }
+        }
+
+        /* 金币飞行 */
+        .vb-fly-coin {
+            font-size: 20px;
+            pointer-events: none;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 快速操作按钮组 */
+        #vb-quick-actions {
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+            z-index: 105; display: none;
+            gap: 8px; justify-content: center;
+        }
+        .vb-quick-btn {
+            background: linear-gradient(135deg, rgba(76,175,80,0.8), rgba(46,125,50,0.9));
+            border: 1px solid rgba(76,175,80,0.5);
+            color: white; padding: 8px 16px;
+            border-radius: 20px; font-size: 12px;
+            cursor: pointer; transition: all 0.2s;
+            font-family: inherit;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            white-space: nowrap;
+        }
+        .vb-quick-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76,175,80,0.4);
+        }
+        .vb-quick-btn:active { transform: scale(0.95); }
+
+        /* 进度提示条 */
+        #vb-progress-hint {
+            position: fixed; bottom: 140px; left: 50%; transform: translateX(-50%);
+            z-index: 100; display: none;
+            align-items: center; gap: 6px;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 5px 14px;
+            max-width: 300px;
+            animation: vb-hintFade 0.3s ease;
+        }
+        @keyframes vb-hintFade {
+            from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        /* 红包样式 */
+        .vb-red-packet {
+            padding: 30px;
+        }
+
+        /* ViralBoost 动画关键帧 */
+        @keyframes vb-bounce {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        @keyframes vb-slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes vb-comboPop {
+            0% { transform: translateX(-50%) scale(0.5); }
+            60% { transform: translateX(-50%) scale(1.15); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+        @keyframes vb-floatIcon {
+            0% { transform: scale(0) rotate(-20deg); }
+            50% { transform: scale(1.3) rotate(5deg); }
+            100% { transform: scale(1) rotate(0); }
+        }
+        @keyframes vb-floatGold {
+            0% { opacity: 0; transform: translateY(10px); }
+            50% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 1; transform: translateY(-5px); }
+        }
+        @keyframes vb-hudBounce {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        @keyframes vb-toolGlow {
+            0%, 100% { box-shadow: none; border-color: rgba(255,255,255,0.2); }
+            50% { box-shadow: 0 0 12px rgba(255,215,0,0.5); border-color: #ffd700; }
+        }
+        @keyframes vb-wheelSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes vb-packetShake {
+            0%, 100% { transform: rotate(0deg); }
+            15% { transform: rotate(-8deg); }
+            30% { transform: rotate(8deg); }
+            45% { transform: rotate(-5deg); }
+            60% { transform: rotate(5deg); }
+            75% { transform: rotate(-2deg); }
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 600px) {
+            #combo-display { top: 15%; }
+            #vb-quick-actions { bottom: 80px; }
+            .vb-quick-btn { padding: 6px 12px; font-size: 11px; }
+            #vb-progress-hint { bottom: 120px; max-width: 260px; font-size: 11px; }
+        }
+
+        /* ══════════════ 爆品升级系统样式结束 ══════════════ */
 
         /* ══════════════ 音效系统HUD ══════════════ */
         #audio-hud {
@@ -741,15 +1372,6 @@
 
         /* ══════════════ 交互增强系统样式 ══════════════ */
 
-        /* 菜单毛玻璃田园风 */
-        #land-menu, #animal-menu {
-            background: rgba(25, 50, 25, 0.85) !important;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(76, 175, 80, 0.4) !important;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
-        }
-
         /* 菜单弹出动画 */
         .menu-enter {
             animation: menuPopIn 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
@@ -776,29 +1398,21 @@
             width: 0; height: 0;
             border-left: 8px solid transparent;
             border-right: 8px solid transparent;
-            border-top: 8px solid rgba(25, 50, 25, 0.85);
+            border-top: 8px solid rgba(18, 32, 18, 0.85);
         }
 
         /* 土地操作菜单项增强 */
-        .land-action {
-            border-radius: 8px;
-            margin: 2px 0;
-            transition: all 0.15s ease;
-        }
-        .land-action:hover {
-            background: rgba(76, 175, 80, 0.25) !important;
-            transform: translateX(3px);
-        }
         .land-action:active {
             transform: scale(0.97);
         }
 
         /* 重要级通知样式 */
         .notification.notif-important {
-            border-left: 3px solid #ffd700;
-            background: rgba(40, 30, 0, 0.9);
-            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.2);
-            font-weight: bold;
+            border-left: 3px solid var(--gold);
+            background: rgba(30, 25, 8, 0.92);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(255, 215, 0, 0.1);
+            font-weight: 600;
         }
 
         /* 飞行金币动画 */
@@ -1003,8 +1617,8 @@
         }
         #left-drawer-toggle {
             width: 48px; height: 48px; border-radius: 50%;
-            background: linear-gradient(135deg, #4CAF50, #2E7D32);
-            border: 2px solid rgba(255,255,255,0.25);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: 1.5px solid rgba(255,255,255,0.15);
             font-size: 20px; cursor: pointer;
             box-shadow: 0 4px 15px rgba(76,175,80,0.4);
             transition: all 0.3s; position: relative;
@@ -1036,8 +1650,8 @@
         }
         .drawer-item {
             display: flex; align-items: center; gap: 6px;
-            background: rgba(0,0,0,0.75);
-            backdrop-filter: blur(8px);
+            background: var(--bg-glass);
+            backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
             border: 1px solid rgba(255,255,255,0.15);
             border-radius: 22px; padding: 8px 14px;
             cursor: pointer; color: white; font-size: 12px;
@@ -1046,7 +1660,7 @@
             font-family: inherit;
         }
         .drawer-item:hover {
-            border-color: #4CAF50; background: rgba(76,175,80,0.2);
+            border-color: var(--border-glow); background: rgba(76,175,80,0.12);
             transform: translateX(4px);
         }
         .drawer-item:active { transform: scale(0.95); }
@@ -1066,7 +1680,8 @@
         #side-more-panel {
             position: fixed; right: 15px; z-index: 100;
             display: none; flex-direction: column; gap: 8px;
-            background: rgba(0,0,0,0.7);
+            background: var(--bg-glass);
+            backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.15);
             border-radius: 14px; padding: 10px;
@@ -1144,10 +1759,12 @@
 <body>
     <!-- 加载界面 -->
     <div id="loading">
-        <h1>🌾 田园时光</h1>
-        <p>3D农场养成经营游戏</p>
+        <div class="loading-logo">🌾</div>
+        <h1>田园时光</h1>
+        <div class="loading-subtitle">3D 农场养成经营</div>
         <div id="loading-bar-bg"><div id="loading-bar"></div></div>
-        <div id="loading-text">正在加载游戏资源...</div>
+        <div id="loading-text">正在准备你的田园世界...</div>
+        <div class="loading-footer">Farm Story · A Cozy Farming Game</div>
     </div>
     
     <!-- 3D画布 -->
@@ -1269,13 +1886,8 @@
             <span id="side-more-icon">⋯</span>
         </div>
     </div>
-    <!-- 右侧更多面板（默认隐藏） -->
+    <!-- 右侧更多面板（由UnlockSystem动态渲染） -->
     <div id="side-more-panel" style="display:none">
-        <div class="side-btn" onclick="showModal('achievement-modal');toggleSideMore()" title="成就">🏆</div>
-        <div class="side-btn" onclick="showModal('rank-modal');toggleSideMore()" title="排行榜">📊</div>
-        <div class="side-btn" onclick="showModal('pokedex-modal');toggleSideMore()" title="图鉴">📖</div>
-        <div class="side-btn" onclick="showModal('fishing-modal');toggleSideMore()" title="钓鱼">🎣</div>
-        <div class="side-btn" onclick="CelebrationSystem.openPanel();toggleSideMore()" title="里程碑">🎖️</div>
     </div>
     
     <!-- 通知区域 -->
@@ -1573,36 +2185,8 @@
             <span id="drawer-toggle-icon">📦</span>
             <span id="drawer-badge" class="drawer-badge" style="display:none"></span>
         </button>
-        <!-- 抽屉展开的功能列表 -->
+        <!-- 抽屉展开的功能列表（由UnlockSystem动态渲染） -->
         <div id="left-drawer-items" class="left-drawer-collapsed">
-            <button class="drawer-item" onclick="GachaSystem.showGachaPanel();toggleLeftDrawer()" title="扭蛋机">
-                <span class="drawer-item-icon">🎰</span>
-                <span class="drawer-item-label">扭蛋</span>
-                <span id="gacha-token-badge" class="drawer-item-badge">0</span>
-            </button>
-            <button class="drawer-item" onclick="CookingSystem.openPanel();toggleLeftDrawer()" title="加工坊">
-                <span class="drawer-item-icon">🍳</span>
-                <span class="drawer-item-label">加工</span>
-                <span class="red-dot" id="cooking-red-dot" style="display:none"></span>
-            </button>
-            <button class="drawer-item" onclick="SocialSystem.openPanel();toggleLeftDrawer()" title="社交中心">
-                <span class="drawer-item-icon">👥</span>
-                <span class="drawer-item-label">社交</span>
-                <span class="red-dot" id="social-red-dot" style="display:none"></span>
-            </button>
-            <button class="drawer-item" onclick="OrderSystem.openPanel();toggleLeftDrawer()" title="订单板">
-                <span class="drawer-item-icon">📋</span>
-                <span class="drawer-item-label">订单</span>
-                <span class="red-dot" id="order-red-dot" style="display:none"></span>
-            </button>
-            <button class="drawer-item" onclick="DecoSystem.openPanel();toggleLeftDrawer()" title="装饰">
-                <span class="drawer-item-icon">🎨</span>
-                <span class="drawer-item-label">装饰</span>
-            </button>
-            <button class="drawer-item" onclick="SeasonalEvents.openPanel();toggleLeftDrawer()" title="季节活动">
-                <span class="drawer-item-icon">🎪</span>
-                <span class="drawer-item-label">活动</span>
-            </button>
         </div>
     </div>
 
@@ -1784,6 +2368,8 @@
     <script src="js/scene3d.js"></script>
     <script src="js/interactionEnhance.js"></script>
     <script src="js/audioSystem.js"></script>
+    <script src="js/unlockSystem.js"></script>
+    <script src="js/viralBoost.js"></script>
     <script src="js/farmLogic.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/adSystem.js"></script>

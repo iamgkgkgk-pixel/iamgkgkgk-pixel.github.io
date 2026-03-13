@@ -174,6 +174,16 @@ async function initGame() {
             document.addEventListener('touchstart', startAudio, { once: false });
         }
 
+        // 初始化渐进式解锁系统（在所有子系统初始化之后）
+        if (typeof UnlockSystem !== 'undefined') {
+            UnlockSystem.init();
+        }
+
+        // 初始化爆品升级系统（在解锁系统之后）
+        if (typeof ViralBoost !== 'undefined') {
+            ViralBoost.init();
+        }
+
         // 初始化新手引导系统（放在最后，等其他系统初始化完成）
         if (typeof TutorialSystem !== 'undefined') {
             TutorialSystem.init();

@@ -492,7 +492,7 @@ const AnimalBehavior = {
         if (typeof Scene3D === 'undefined') return;
         const geo = this._getSharedGeo('dust', () => new THREE.SphereGeometry(0.04, 4, 4));
         for (let i = 0; i < 12; i++) {
-            const mat = new THREE.MeshLambertMaterial({ color: 0xccaa88, transparent: true, opacity: 0.7 });
+            const mat = new THREE.MeshStandardMaterial({ color: 0xccaa88, transparent: true, opacity: 0.7, roughness: 0.5, metalness: 0.0 });
             const p = new THREE.Mesh(geo, mat);
             p.position.set(
                 pos.x + (Math.random() - 0.5) * 0.8,
@@ -519,7 +519,7 @@ const AnimalBehavior = {
         const colors = [0xffd700, 0xff88aa, 0x88ffaa, 0x88aaff];
         const geo = this._getSharedGeo('joy', () => new THREE.SphereGeometry(0.05, 4, 4));
         for (let i = 0; i < 15; i++) {
-            const mat = new THREE.MeshLambertMaterial({ color: colors[i % colors.length], transparent: true, opacity: 0.9 });
+            const mat = new THREE.MeshStandardMaterial({ color: colors[i % colors.length], transparent: true, opacity: 0.9, roughness: 0.5, metalness: 0.0 });
             const p = new THREE.Mesh(geo, mat);
             p.position.set(pos.x, pos.y + 0.5, pos.z);
             const angle = (i / 15) * Math.PI * 2;
@@ -542,7 +542,7 @@ const AnimalBehavior = {
         if (typeof Scene3D === 'undefined') return;
         const geo = this._getSharedGeo('love', () => new THREE.SphereGeometry(0.06, 4, 4));
         for (let i = 0; i < 8; i++) {
-            const mat = new THREE.MeshLambertMaterial({ color: 0xff4488, transparent: true, opacity: 0.9 });
+            const mat = new THREE.MeshStandardMaterial({ color: 0xff4488, transparent: true, opacity: 0.9, roughness: 0.5, metalness: 0.0 });
             const p = new THREE.Mesh(geo, mat);
             p.position.set(pos.x + (Math.random()-0.5)*0.5, pos.y + 0.8, pos.z + (Math.random()-0.5)*0.5);
             p.userData = {
@@ -560,7 +560,7 @@ const AnimalBehavior = {
         if (typeof Scene3D === 'undefined') return;
         const geo = this._getSharedGeo('star', () => new THREE.SphereGeometry(0.04, 4, 4));
         for (let i = 0; i < 6; i++) {
-            const mat = new THREE.MeshLambertMaterial({ color: 0xffdd00, transparent: true, opacity: 0.9 });
+            const mat = new THREE.MeshStandardMaterial({ color: 0xffdd00, transparent: true, opacity: 0.9, roughness: 0.5, metalness: 0.0 });
             const p = new THREE.Mesh(geo, mat);
             p.position.set(pos.x + (Math.random()-0.5)*0.4, pos.y + 0.6, pos.z + (Math.random()-0.5)*0.4);
             p.userData = {

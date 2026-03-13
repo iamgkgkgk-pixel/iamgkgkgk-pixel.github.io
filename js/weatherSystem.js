@@ -96,7 +96,7 @@ const WeatherSystem = {
 
         // 共享同一份geo和mat，所有雨滴实例化
         const geo = new THREE.CylinderGeometry(0.01, 0.01, 0.3, 3);
-        const mat = new THREE.MeshLambertMaterial({ color: 0x88aacc, transparent: true, opacity: 0.5 });
+        const mat = new THREE.MeshStandardMaterial({ color: 0x88aacc, transparent: true, opacity: 0.5, roughness: 0.5, metalness: 0.0 });
         this._rainGeo = geo;
         this._rainMat = mat;
 
@@ -140,7 +140,7 @@ const WeatherSystem = {
 
         // 共享geo和mat
         const geo = new THREE.SphereGeometry(0.04, 4, 4);
-        const mat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+        const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, roughness: 0.5, metalness: 0.0 });
         this._snowGeo = geo;
         this._snowMat = mat;
 
@@ -178,7 +178,7 @@ const WeatherSystem = {
         colors.forEach((color, i) => {
             const r = 12 + i * 0.6;
             const geo = new THREE.TorusGeometry(r, 0.12, 6, 40, Math.PI);
-            const mat = new THREE.MeshLambertMaterial({ color, transparent: true, opacity: 0.5 });
+            const mat = new THREE.MeshStandardMaterial({ color, transparent: true, opacity: 0.5, roughness: 0.5, metalness: 0.0 });
             const arc = new THREE.Mesh(geo, mat);
             arc.rotation.x = Math.PI / 2;
             group.add(arc);
@@ -216,11 +216,12 @@ const WeatherSystem = {
         const auroraColors = [0x00ff88, 0x0088ff, 0xff00ff, 0x00ffff];
         for (let i = 0; i < 4; i++) {
             const geo = new THREE.PlaneGeometry(30, 8);
-            const mat = new THREE.MeshLambertMaterial({
+            const mat = new THREE.MeshStandardMaterial({
                 color: auroraColors[i],
                 transparent: true,
                 opacity: 0.15,
-                side: THREE.DoubleSide
+                side: THREE.DoubleSide,
+                roughness: 0.5, metalness: 0.0
             });
             const plane = new THREE.Mesh(geo, mat);
             plane.position.set((i - 1.5) * 8, 20, -30);
@@ -251,7 +252,7 @@ const WeatherSystem = {
 
     _spawnMeteor() {
         const geo = new THREE.CylinderGeometry(0.02, 0.02, 2, 4);
-        const mat = new THREE.MeshLambertMaterial({ color: 0xffffaa, transparent: true, opacity: 0.9 });
+        const mat = new THREE.MeshStandardMaterial({ color: 0xffffaa, transparent: true, opacity: 0.9, roughness: 0.5, metalness: 0.0 });
         const meteor = new THREE.Mesh(geo, mat);
         meteor.position.set(
             (Math.random() - 0.5) * 40,

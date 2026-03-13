@@ -85,9 +85,10 @@ const SceneHorizon = {
         groundGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(colors), 3));
         groundGeo.computeVertexNormals();
 
-        const groundMat = new THREE.MeshLambertMaterial({
+        const groundMat = new THREE.MeshStandardMaterial({
             vertexColors: true,
             fog: true,
+            roughness: 0.9, metalness: 0.0
         });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
@@ -115,9 +116,10 @@ const SceneHorizon = {
     },
 
     _createForestSilhouette(scene, radius, opacity, color, minH, maxH) {
-        const mat = new THREE.MeshLambertMaterial({
+        const mat = new THREE.MeshStandardMaterial({
             color, transparent: true, opacity,
-            fog: true, side: THREE.FrontSide
+            fog: true, side: THREE.FrontSide,
+            roughness: 0.9, metalness: 0.0
         });
         const count = 48; // 连续树冠带
         for (let i = 0; i < count; i++) {
@@ -134,8 +136,9 @@ const SceneHorizon = {
 
             // 树干
             const trunkGeo = new THREE.CylinderGeometry(0.2, 0.35, h * 0.4, 5);
-            const trunk = new THREE.Mesh(trunkGeo, new THREE.MeshLambertMaterial({
-                color: 0x3E2723, transparent: true, opacity: opacity * 0.8, fog: true
+            const trunk = new THREE.Mesh(trunkGeo, new THREE.MeshStandardMaterial({
+                color: 0x3E2723, transparent: true, opacity: opacity * 0.8, fog: true,
+                roughness: 0.9, metalness: 0.0
             }));
             trunk.position.y = h * 0.2;
             group.add(trunk);
@@ -157,9 +160,10 @@ const SceneHorizon = {
     },
 
     _createMountainLayer(scene, radius, opacity, color, minH, maxH) {
-        const mat = new THREE.MeshLambertMaterial({
+        const mat = new THREE.MeshStandardMaterial({
             color, transparent: true, opacity,
-            fog: true, side: THREE.FrontSide
+            fog: true, side: THREE.FrontSide,
+            roughness: 0.9, metalness: 0.0
         });
         const count = 12 + Math.floor(Math.random() * 6);
         for (let i = 0; i < count; i++) {
@@ -198,8 +202,9 @@ const SceneHorizon = {
             const d = 6 + Math.random() * 8;
             const color = fieldColors[Math.floor(Math.random() * fieldColors.length)];
             const geo = new THREE.PlaneGeometry(w, d);
-            const mat = new THREE.MeshLambertMaterial({
-                color, transparent: true, opacity: 0.5, fog: true
+            const mat = new THREE.MeshStandardMaterial({
+                color, transparent: true, opacity: 0.5, fog: true,
+                roughness: 0.9, metalness: 0.0
             });
             const mesh = new THREE.Mesh(geo, mat);
             mesh.rotation.x = -Math.PI / 2;
@@ -211,8 +216,9 @@ const SceneHorizon = {
 
     _createDistantBuildings(scene) {
         const buildingColor = 0x5D6D7E;
-        const mat = new THREE.MeshLambertMaterial({
-            color: buildingColor, transparent: true, opacity: 0.45, fog: true
+        const mat = new THREE.MeshStandardMaterial({
+            color: buildingColor, transparent: true, opacity: 0.45, fog: true,
+            roughness: 0.9, metalness: 0.0
         });
         // 2-3个建筑剪影（塔尖/风车/谷仓轮廓）
         const positions = [
@@ -230,8 +236,9 @@ const SceneHorizon = {
 
             // 屋顶
             const roofGeo = new THREE.ConeGeometry(2.5, 2, 4);
-            const roof = new THREE.Mesh(roofGeo, new THREE.MeshLambertMaterial({
-                color: 0x4A3728, transparent: true, opacity: 0.4, fog: true
+            const roof = new THREE.Mesh(roofGeo, new THREE.MeshStandardMaterial({
+                color: 0x4A3728, transparent: true, opacity: 0.4, fog: true,
+                roughness: 0.9, metalness: 0.0
             }));
             roof.rotation.y = Math.PI / 4;
             roof.position.y = 5;
@@ -275,11 +282,12 @@ const SceneHorizon = {
         };
 
         // 大型扁平云朵（遮挡天地接缝）
-        const cloudMat = new THREE.MeshLambertMaterial({
+        const cloudMat = new THREE.MeshStandardMaterial({
             color: 0xEEF5FF,
             transparent: true,
             opacity: 0.75,
             fog: true,
+            roughness: 1.0, metalness: 0.0
         });
         const sizes = [3.5, 2.8, 2.2, 3.0, 2.5];
         const offsets = [[0,0,0],[3,-0.5,0],[-3,-0.5,0],[1.5,0.8,0],[-1.5,0.8,0]];
@@ -318,7 +326,7 @@ const SceneHorizon = {
             };
 
             // V字形排列 7只鸟
-            const birdMat = new THREE.MeshLambertMaterial({ color: 0x2C2C2C });
+            const birdMat = new THREE.MeshStandardMaterial({ color: 0x2C2C2C, roughness: 0.85, metalness: 0.0 });
             const birdPositions = [
                 [0, 0, 0],
                 [-1.2, -0.3, -1.0], [1.2, -0.3, -1.0],

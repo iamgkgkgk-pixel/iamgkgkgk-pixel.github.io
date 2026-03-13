@@ -28,7 +28,7 @@ const SceneBeautify = {
             colors.push(c.r + jitter, c.g + jitter, c.b + jitter);
         }
         groundGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(colors), 3));
-        const groundMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+        const groundMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0.0 });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
         ground.receiveShadow = true;
@@ -41,7 +41,7 @@ const SceneBeautify = {
             const w = 0.3 + Math.random() * 0.5;
             const d = 0.2 + Math.random() * 0.3;
             const trampleGeo = new THREE.PlaneGeometry(w, d);
-            const trampleMat = new THREE.MeshLambertMaterial({ color: 0x5D8A32, transparent: true, opacity: 0.6 });
+            const trampleMat = new THREE.MeshStandardMaterial({ color: 0x5D8A32, transparent: true, opacity: 0.6, roughness: 0.85, metalness: 0.0 });
             const trample = new THREE.Mesh(trampleGeo, trampleMat);
             trample.rotation.x = -Math.PI / 2;
             trample.rotation.z = Math.random() * Math.PI;
@@ -53,7 +53,7 @@ const SceneBeautify = {
     // ===== 2. 创建路径系统 =====
     createPaths(scene) {
         // 主泥土路（纵向，连接房屋↔农田↔风车）
-        const mainPathMat = new THREE.MeshLambertMaterial({ color: 0x8B7355 });
+        const mainPathMat = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.85, metalness: 0.0 });
         const mainPathGeo = new THREE.PlaneGeometry(1.2, 26);
         const mainPath = new THREE.Mesh(mainPathGeo, mainPathMat);
         mainPath.rotation.x = -Math.PI / 2;
@@ -68,7 +68,7 @@ const SceneBeautify = {
         scene.add(crossPath);
 
         // 路径边缘磨损纹理（两侧深色条）
-        const edgeMat = new THREE.MeshLambertMaterial({ color: 0x6B5A3E, transparent: true, opacity: 0.5 });
+        const edgeMat = new THREE.MeshStandardMaterial({ color: 0x6B5A3E, transparent: true, opacity: 0.5, roughness: 0.85, metalness: 0.0 });
         [-0.65, 0.65].forEach(offset => {
             const edgeGeo = new THREE.PlaneGeometry(0.15, 26);
             const edge = new THREE.Mesh(edgeGeo, edgeMat);
@@ -85,7 +85,7 @@ const SceneBeautify = {
         });
 
         // 石子小径（农田↔动物区，斜向）
-        const stonePathMat = new THREE.MeshLambertMaterial({ color: 0x9E9E9E, transparent: true, opacity: 0.8 });
+        const stonePathMat = new THREE.MeshStandardMaterial({ color: 0x9E9E9E, transparent: true, opacity: 0.8, roughness: 0.85, metalness: 0.0 });
         const stonePath1Geo = new THREE.PlaneGeometry(0.7, 10);
         const stonePath1 = new THREE.Mesh(stonePath1Geo, stonePathMat);
         stonePath1.rotation.x = -Math.PI / 2;
@@ -94,7 +94,7 @@ const SceneBeautify = {
         scene.add(stonePath1);
 
         // 路面石子颗粒
-        const pebbleMat = new THREE.MeshLambertMaterial({ color: 0xAAAAAA });
+        const pebbleMat = new THREE.MeshStandardMaterial({ color: 0xAAAAAA, roughness: 0.85, metalness: 0.0 });
         for (let i = 0; i < 30; i++) {
             const px = (Math.random() - 0.5) * 1.0;
             const pz = (Math.random() - 0.5) * 25;
@@ -144,8 +144,9 @@ const SceneBeautify = {
                 const tiltAngle = isBroken ? (0.08 + Math.random() * 0.17) : 0;
 
                 const postGeo = new THREE.BoxGeometry(w, postH, w);
-                const postMat = new THREE.MeshLambertMaterial({
-                    color: postColors[Math.floor(Math.random() * postColors.length)]
+                const postMat = new THREE.MeshStandardMaterial({
+                    color: postColors[Math.floor(Math.random() * postColors.length)],
+                    roughness: 0.85, metalness: 0.0
                 });
                 const post = new THREE.Mesh(postGeo, postMat);
 
@@ -158,7 +159,7 @@ const SceneBeautify = {
                 // 转角加粗支柱
                 if (Math.abs(t) === fenceRadius) {
                     const cornerGeo = new THREE.BoxGeometry(0.3, 0.6, 0.3);
-                    const corner = new THREE.Mesh(cornerGeo, new THREE.MeshLambertMaterial({ color: 0x6B3410 }));
+                    const corner = new THREE.Mesh(cornerGeo, new THREE.MeshStandardMaterial({ color: 0x6B3410, roughness: 0.85, metalness: 0.0 }));
                     corner.position.set(px, 0.3, pz);
                     corner.castShadow = true;
                     scene.add(corner);
@@ -173,8 +174,9 @@ const SceneBeautify = {
                     if (this._isInPondArea(npx, npz, 1.5)) continue;
 
                     const railLen = spacing;
-                    const railMat = new THREE.MeshLambertMaterial({
-                        color: railColors[Math.floor(Math.random() * railColors.length)]
+                    const railMat = new THREE.MeshStandardMaterial({
+                        color: railColors[Math.floor(Math.random() * railColors.length)],
+                        roughness: 0.85, metalness: 0.0
                     });
                     [0.35, 0.15].forEach(railY => {
                         let railGeo;
@@ -197,7 +199,7 @@ const SceneBeautify = {
     // ===== 4. 创建美化土地地块 =====
     createBeautifulPlot(group, plotIndex) {
         // 基础土色 #795548
-        const soilMat = new THREE.MeshLambertMaterial({ color: 0x795548 });
+        const soilMat = new THREE.MeshStandardMaterial({ color: 0x795548, roughness: 0.85, metalness: 0.0 });
         const soilGeo = new THREE.BoxGeometry(3.0, 0.28, 3.0);
 
         const soil = new THREE.Mesh(soilGeo, soilMat);
@@ -209,7 +211,7 @@ const SceneBeautify = {
         group.userData.soilBaseMat = soilMat;
 
         // 耕作沟痕（平行横纹，间距0.1）
-        const furrowMat = new THREE.MeshLambertMaterial({ color: 0x5D4037 });
+        const furrowMat = new THREE.MeshStandardMaterial({ color: 0x5D4037, roughness: 0.85, metalness: 0.0 });
         for (let row = -1.5; row <= 1.5; row += 0.35) {
             const furrowGeo = new THREE.BoxGeometry(3.3, 0.03, 0.06);
             const furrow = new THREE.Mesh(furrowGeo, furrowMat);
@@ -218,7 +220,7 @@ const SceneBeautify = {
         }
 
         // 土块颗粒（随机凸起）
-        const clodMat = new THREE.MeshLambertMaterial({ color: 0x6D4C41 });
+        const clodMat = new THREE.MeshStandardMaterial({ color: 0x6D4C41, roughness: 0.85, metalness: 0.0 });
         for (let c = 0; c < 18; c++) {
             const cx = (Math.random() - 0.5) * 3.0;
             const cz = (Math.random() - 0.5) * 3.0;
@@ -231,7 +233,7 @@ const SceneBeautify = {
         }
 
         // 边缘过渡：杂草点缀
-        const weedMat = new THREE.MeshLambertMaterial({ color: 0x5D8A32 });
+        const weedMat = new THREE.MeshStandardMaterial({ color: 0x5D8A32, roughness: 0.85, metalness: 0.0 });
         for (let w = 0; w < 8; w++) {
             const angle = (w / 8) * Math.PI * 2;
             const r = 1.7 + Math.random() * 0.1;
@@ -246,7 +248,7 @@ const SceneBeautify = {
         }
 
         // 边框（碎土散落感）
-        const borderMat = new THREE.MeshLambertMaterial({ color: 0x4E342E });
+        const borderMat = new THREE.MeshStandardMaterial({ color: 0x4E342E, roughness: 0.85, metalness: 0.0 });
         const borderGeo = new THREE.BoxGeometry(3.8, 0.08, 3.8);
         const border = new THREE.Mesh(borderGeo, borderMat);
         border.position.y = 0.04;
@@ -342,7 +344,7 @@ const SceneBeautify = {
             const stemH = 0.1 + Math.random() * 0.2;
             // 茎
             const stemGeo = new THREE.CylinderGeometry(0.01, 0.015, stemH, 4);
-            const stemMat = new THREE.MeshLambertMaterial({ color: 0x3CB371 });
+            const stemMat = new THREE.MeshStandardMaterial({ color: 0x3CB371, roughness: 0.85, metalness: 0.0 });
             const stem = new THREE.Mesh(stemGeo, stemMat);
             const ox = (Math.random() - 0.5) * 0.3;
             const oz = (Math.random() - 0.5) * 0.3;
@@ -350,7 +352,7 @@ const SceneBeautify = {
             scene.add(stem);
             // 花朵
             const petalGeo = new THREE.SphereGeometry(0.05 + Math.random() * 0.04, 5, 4);
-            const petalMat = new THREE.MeshLambertMaterial({ color });
+            const petalMat = new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0.0 });
             const petal = new THREE.Mesh(petalGeo, petalMat);
             petal.scale.y = 0.5;
             petal.position.set(x + ox, stemH + 0.04, z + oz);
@@ -363,7 +365,7 @@ const SceneBeautify = {
         const color = pebbleColors[Math.floor(Math.random() * pebbleColors.length)];
         const size = 0.05 + Math.random() * 0.1;
         const geo = new THREE.SphereGeometry(size, 5, 4);
-        const mat = new THREE.MeshLambertMaterial({ color });
+        const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0.0 });
         const pebble = new THREE.Mesh(geo, mat);
         pebble.scale.set(1 + Math.random() * 0.5, 0.5 + Math.random() * 0.3, 1 + Math.random() * 0.5);
         pebble.position.set(x, size * 0.3, z);
@@ -377,7 +379,7 @@ const SceneBeautify = {
         const size = 0.3 + Math.random() * 0.3;
         // 主球
         const mainGeo = new THREE.SphereGeometry(size, 7, 6);
-        const mat = new THREE.MeshLambertMaterial({ color });
+        const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0.0 });
         const main = new THREE.Mesh(mainGeo, mat);
         main.position.set(x, size * 0.7, z);
         main.castShadow = true;
@@ -394,9 +396,9 @@ const SceneBeautify = {
     },
 
     _createMushroom(scene, x, z) {
-        const stemMat = new THREE.MeshLambertMaterial({ color: 0xF5F5DC });
-        const capMat = new THREE.MeshLambertMaterial({ color: 0xCC2200 });
-        const dotMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
+        const stemMat = new THREE.MeshStandardMaterial({ color: 0xF5F5DC, roughness: 0.85, metalness: 0.0 });
+        const capMat = new THREE.MeshStandardMaterial({ color: 0xCC2200, roughness: 0.85, metalness: 0.0 });
+        const dotMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 0.85, metalness: 0.0 });
         const stemH = 0.08 + Math.random() * 0.07;
         const capR = 0.06 + Math.random() * 0.06;
         // 茎
@@ -426,7 +428,7 @@ const SceneBeautify = {
             const lx = x + (Math.random() - 0.5) * 0.8;
             const lz = z + (Math.random() - 0.5) * 0.8;
             const lGeo = new THREE.SphereGeometry(0.08 + Math.random() * 0.08, 5, 3);
-            const lMat = new THREE.MeshLambertMaterial({ color });
+            const lMat = new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0.0 });
             const leaf = new THREE.Mesh(lGeo, lMat);
             leaf.scale.set(1.5 + Math.random(), 0.2, 1.5 + Math.random());
             leaf.position.set(lx, 0.02, lz);
@@ -463,9 +465,9 @@ const SceneBeautify = {
     },
 
     _createWell(scene, x, z) {
-        const stoneMat = new THREE.MeshLambertMaterial({ color: 0x9E9E9E });
-        const woodMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-        const roofMat = new THREE.MeshLambertMaterial({ color: 0x8B0000 });
+        const stoneMat = new THREE.MeshStandardMaterial({ color: 0x9E9E9E, roughness: 0.85, metalness: 0.0 });
+        const woodMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.85, metalness: 0.0 });
+        const roofMat = new THREE.MeshStandardMaterial({ color: 0x8B0000, roughness: 0.85, metalness: 0.0 });
 
         // 井圈
         const wellGeo = new THREE.CylinderGeometry(0.35, 0.38, 0.5, 12, 1, true);
@@ -508,8 +510,8 @@ const SceneBeautify = {
     },
 
     _createHayBale(scene, x, z) {
-        const hayMat = new THREE.MeshLambertMaterial({ color: 0xDAA520 });
-        const bandMat = new THREE.MeshLambertMaterial({ color: 0xB8860B });
+        const hayMat = new THREE.MeshStandardMaterial({ color: 0xDAA520, roughness: 0.85, metalness: 0.0 });
+        const bandMat = new THREE.MeshStandardMaterial({ color: 0xB8860B, roughness: 0.85, metalness: 0.0 });
         // 主体（圆柱形草垛）
         const baleGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.7, 10);
         const bale = new THREE.Mesh(baleGeo, hayMat);
@@ -528,8 +530,8 @@ const SceneBeautify = {
     },
 
     _createBarrel(scene, x, z) {
-        const woodMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-        const bandMat = new THREE.MeshLambertMaterial({ color: 0x5C3317 });
+        const woodMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.85, metalness: 0.0 });
+        const bandMat = new THREE.MeshStandardMaterial({ color: 0x5C3317, roughness: 0.85, metalness: 0.0 });
         const h = 0.35 + Math.random() * 0.1;
         const r = 0.12 + Math.random() * 0.03;
         // 桶身
@@ -550,10 +552,10 @@ const SceneBeautify = {
     },
 
     _createScarecrow(scene, x, z) {
-        const bodyMat = new THREE.MeshLambertMaterial({ color: 0x8B6914 });
-        const hatMat = new THREE.MeshLambertMaterial({ color: 0x3E2723 });
-        const faceMat = new THREE.MeshLambertMaterial({ color: 0xF5DEB3 });
-        const clothMat = new THREE.MeshLambertMaterial({ color: 0x795548 });
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x8B6914, roughness: 0.85, metalness: 0.0 });
+        const hatMat = new THREE.MeshStandardMaterial({ color: 0x3E2723, roughness: 0.85, metalness: 0.0 });
+        const faceMat = new THREE.MeshStandardMaterial({ color: 0xF5DEB3, roughness: 0.85, metalness: 0.0 });
+        const clothMat = new THREE.MeshStandardMaterial({ color: 0x795548, roughness: 0.85, metalness: 0.0 });
 
         // 木桩
         const poleGeo = new THREE.CylinderGeometry(0.04, 0.05, 1.2, 5);
@@ -591,8 +593,8 @@ const SceneBeautify = {
     },
 
     _createToolRack(scene, x, z) {
-        const woodMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-        const metalMat = new THREE.MeshLambertMaterial({ color: 0x9E9E9E });
+        const woodMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.85, metalness: 0.0 });
+        const metalMat = new THREE.MeshStandardMaterial({ color: 0x9E9E9E, roughness: 0.85, metalness: 0.0 });
 
         // 架子主体
         const frameGeo = new THREE.BoxGeometry(0.6, 0.8, 0.1);
@@ -636,8 +638,8 @@ const SceneBeautify = {
     },
 
     _createBench(scene, x, z) {
-        const woodMat = new THREE.MeshLambertMaterial({ color: 0x8B6914 });
-        const legMat = new THREE.MeshLambertMaterial({ color: 0x6B4F10 });
+        const woodMat = new THREE.MeshStandardMaterial({ color: 0x8B6914, roughness: 0.85, metalness: 0.0 });
+        const legMat = new THREE.MeshStandardMaterial({ color: 0x6B4F10, roughness: 0.85, metalness: 0.0 });
 
         // 座板
         const seatGeo = new THREE.BoxGeometry(0.65, 0.06, 0.28);
@@ -691,7 +693,7 @@ const SceneBeautify = {
         const group = new THREE.Group();
 
         // 翅膀（两片）
-        const wingMat = new THREE.MeshLambertMaterial({ color, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
+        const wingMat = new THREE.MeshStandardMaterial({ color, transparent: true, opacity: 0.85, side: THREE.DoubleSide, roughness: 0.85, metalness: 0.0 });
         [-1, 1].forEach(side => {
             const wingGeo = new THREE.SphereGeometry(0.1, 5, 4);
             const wing = new THREE.Mesh(wingGeo, wingMat);
@@ -702,7 +704,7 @@ const SceneBeautify = {
 
         // 身体
         const bodyGeo = new THREE.CylinderGeometry(0.02, 0.015, 0.15, 4);
-        const bodyMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.85, metalness: 0.0 });
         const body = new THREE.Mesh(bodyGeo, bodyMat);
         body.rotation.x = Math.PI / 2;
         group.add(body);
@@ -732,7 +734,7 @@ const SceneBeautify = {
 
         // 蜂身（黄黑条纹）
         const bodyGeo = new THREE.SphereGeometry(0.06, 6, 5);
-        const bodyMat = new THREE.MeshLambertMaterial({ color: 0xFFCC00 });
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xFFCC00, roughness: 0.85, metalness: 0.0 });
         const body = new THREE.Mesh(bodyGeo, bodyMat);
         body.scale.set(0.7, 0.7, 1.2);
         group.add(body);
@@ -740,7 +742,7 @@ const SceneBeautify = {
         // 条纹
         for (let s = 0; s < 2; s++) {
             const stripeGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.02, 6);
-            const stripeMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
+            const stripeMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.85, metalness: 0.0 });
             const stripe = new THREE.Mesh(stripeGeo, stripeMat);
             stripe.rotation.x = Math.PI / 2;
             stripe.position.z = -0.02 + s * 0.04;
@@ -748,7 +750,7 @@ const SceneBeautify = {
         }
 
         // 翅膀
-        const wingMat = new THREE.MeshLambertMaterial({ color: 0xCCEEFF, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+        const wingMat = new THREE.MeshStandardMaterial({ color: 0xCCEEFF, transparent: true, opacity: 0.6, side: THREE.DoubleSide, roughness: 0.85, metalness: 0.0 });
         [-1, 1].forEach(side => {
             const wingGeo = new THREE.SphereGeometry(0.07, 5, 4);
             const wing = new THREE.Mesh(wingGeo, wingMat);
@@ -781,7 +783,7 @@ const SceneBeautify = {
         const petalColors = [0xFFB7C5, 0xFFD1DC, 0xFF9EBC, 0xFFC0CB, 0xFFE4E1];
         const color = petalColors[index % petalColors.length];
         const geo = new THREE.SphereGeometry(0.05 + Math.random() * 0.04, 5, 4);
-        const mat = new THREE.MeshLambertMaterial({ color, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+        const mat = new THREE.MeshStandardMaterial({ color, transparent: true, opacity: 0.8, side: THREE.DoubleSide, roughness: 0.85, metalness: 0.0 });
         const petal = new THREE.Mesh(geo, mat);
         petal.scale.set(1.5, 0.2, 1.0);
 

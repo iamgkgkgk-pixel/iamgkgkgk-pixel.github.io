@@ -1,5 +1,158 @@
 // ===== 3D场景管理 =====
 
+// ===== 统一调色板系统 =====
+const PALETTE = {
+    // 暖色田园调色板 - 所有颜色统一偏黄绿暖调，中低饱和
+    sky:       0x8EC8E0,   // 柔和天蓝（降低饱和）
+    skyWarm:   0xD4B896,   // 暖黄天空（黄昏用）
+    
+    // 草地/自然
+    grassBase: 0x5B8C3C,   // 暖绿草地基础色
+    grassDark: 0x3D6B22,   // 深草色
+    grassLight:0x8DB84E,   // 浅亮草色
+    grassDry:  0xAA9660,   // 枯黄色
+    
+    // 土壤
+    soilBase:  0x7A5C42,   // 温暖棕土
+    soilDark:  0x5A3E2B,   // 深色湿润土
+    soilLight: 0x9A7B5A,   // 浅色干土
+    soilWet:   0x4A3020,   // 浇水后深色
+    
+    // 木材
+    woodDark:  0x5C3A1E,   // 深木色（旧木）
+    woodBase:  0x7A5230,   // 基础木色
+    woodLight: 0x9E7A52,   // 浅木色（新木）
+    woodRed:   0x8B4513,   // 红棕木
+    
+    // 建筑
+    barnRed:   0xA63C28,   // 谷仓红（偏暗偏暖，不刺眼）
+    barnRedDark:0x7A2A1A,  // 谷仓深红
+    roofBrown: 0x5C3317,   // 屋顶棕
+    roofTile:  0x8B5E3C,   // 瓦片色
+    stoneGray: 0x8A8478,   // 暖灰石色
+    stoneDark: 0x5E5A52,   // 深石色
+    
+    // 风车
+    millWhite: 0xE8E0D4,   // 风车白（偏暖米白）
+    millMetal: 0x7A7870,   // 氧化铁色
+    millBlade: 0xD5CEC2,   // 风叶色
+    
+    // 金属
+    metalRust: 0x8A6844,   // 锈铁色
+    metalDark: 0x4A4A48,   // 深铁色
+    
+    // 围栏
+    fenceBase: 0x6B4A28,   // 围栏基础色
+    fenceDark: 0x4A3218,   // 围栏深色
+    fenceLight:0x8B6940,   // 围栏浅色
+    
+    // 水体
+    waterSurface: 0x6BBAA8, // 水面色（偏绿暖调）
+    waterDeep:    0x2A5A5A, // 深水色
+    
+    // 叶色
+    leafDark:  0x2D6B2D,   // 深叶绿
+    leafBase:  0x3E8A3E,   // 基础叶绿
+    leafLight: 0x5CAA5C,   // 浅叶绿
+    leafYellow:0x8BAA3A,   // 黄绿叶
+    
+    // 花色（中低饱和暖调）
+    flowerPink:  0xD48A8A, // 柔粉
+    flowerYellow:0xD4AA4A, // 暖黄
+    flowerPurple:0x8A6AA0, // 柔紫
+    flowerWhite: 0xE8E0D4, // 米白花
+    
+    // 特殊
+    gold:      0xD4AA4A,   // 金色
+    highlight: 0xFFE8A0,   // 高亮暖黄
+};
+
+// ===== 材质工厂（统一管理所有材质创建） =====
+const MatFactory = {
+    _cache: {},
+    
+    // 木质材质（高粗糙度）
+    wood(color = PALETTE.woodBase) {
+        return new THREE.MeshStandardMaterial({ 
+            color, roughness: 0.85, metalness: 0.0 
+        });
+    },
+    
+    // 石材材质
+    stone(color = PALETTE.stoneGray) {
+        return new THREE.MeshStandardMaterial({ 
+            color, roughness: 0.92, metalness: 0.02 
+        });
+    },
+    
+    // 金属材质（低粗糙度）
+    metal(color = PALETTE.millMetal) {
+        return new THREE.MeshStandardMaterial({ 
+            color, roughness: 0.35, metalness: 0.6 
+        });
+    },
+    
+    // 锈铁材质
+    rustMetal(color = PALETTE.metalRust) {
+        return new THREE.MeshStandardMaterial({ 
+            color, roughness: 0.7, metalness: 0.4 
+        });
+    },
+    
+    // 土壤材质
+    soil(color = PALETTE.soilBase) {
+        return new THREE.MeshStandardMaterial({ 
+            color, roughness: 0.95, metalness: 0.0 
+        });
+    },
+    
+    // 叶/草材质（轻微半透明感）
+    foliage(color = PALETTE.leafBase) {
+        return new THREE.MeshStandardMaterial({ 
+            color, roughness: 0.8, metalness: 0.0
+        });
+    },
+    
+    // 卡通动物材质
+    toon(color) {
+        // 使用 MeshStandardMaterial 配合低粗糙度模拟丝滑皮毛感
+        return new THREE.MeshStandardMaterial({ 
+            color, roughness: 0.55, metalness: 0.0 
+        });
+    },
+    
+    // 建筑墙体材质
+    wall(color = PALETTE.barnRed) {
+        return new THREE.MeshStandardMaterial({ 
+            color, roughness: 0.78, metalness: 0.02 
+        });
+    },
+    
+    // 屋顶瓦片材质
+    roof(color = PALETTE.roofTile) {
+        return new THREE.MeshStandardMaterial({ 
+            color, roughness: 0.7, metalness: 0.05 
+        });
+    },
+    
+    // 玻璃材质
+    glass(color = 0x88CCEE, opacity = 0.4) {
+        return new THREE.MeshPhysicalMaterial({ 
+            color, transparent: true, opacity,
+            roughness: 0.05, metalness: 0.1, 
+            clearcoat: 1.0, clearcoatRoughness: 0.1
+        });
+    },
+    
+    // 发光材质
+    emissive(color, intensity = 0.8) {
+        return new THREE.MeshStandardMaterial({ 
+            color, emissive: color, emissiveIntensity: intensity,
+            roughness: 0.5, metalness: 0.0
+        });
+    },
+};
+
 const Scene3D = {
     scene: null,
     camera: null,
@@ -21,6 +174,7 @@ const Scene3D = {
     // 光照
     sunLight: null,
     ambientLight: null,
+    nightLights: [],  // 夜间点光源
     
     // 粒子系统
     particles: [],
@@ -31,19 +185,22 @@ const Scene3D = {
         
         // 创建场景
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x87CEEB);
-        this.scene.fog = new THREE.Fog(0x87CEEB, 30, 80);
+        this.scene.background = new THREE.Color(PALETTE.sky);
+        this.scene.fog = new THREE.Fog(PALETTE.sky, 30, 80);
         
         // 创建相机
-        this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+        this.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
         this.updateCamera();
         
-        // 创建渲染器
-        this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        // 创建渲染器 - 增强配置
+        this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.1;
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         // 扩大远裁面，确保远景层可见
         this.camera.far = 300;
         this.camera.updateProjectionMatrix();
@@ -101,27 +258,90 @@ const Scene3D = {
     
     // 设置光照
     setupLighting() {
-        // 环境光
-        this.ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        // 环境光 - 暖调
+        this.ambientLight = new THREE.AmbientLight(0xFFF8E8, 0.5);
         this.scene.add(this.ambientLight);
         
-        // 太阳光
-        this.sunLight = new THREE.DirectionalLight(0xfff5e0, 1.2);
+        // 太阳光 - 暖黄色直射光
+        this.sunLight = new THREE.DirectionalLight(0xFFF0D0, 1.3);
         this.sunLight.position.set(20, 30, 20);
         this.sunLight.castShadow = true;
-        this.sunLight.shadow.mapSize.width = 2048;
-        this.sunLight.shadow.mapSize.height = 2048;
+        this.sunLight.shadow.mapSize.width = 4096;
+        this.sunLight.shadow.mapSize.height = 4096;
         this.sunLight.shadow.camera.near = 0.5;
-        this.sunLight.shadow.camera.far = 100;
-        this.sunLight.shadow.camera.left = -30;
-        this.sunLight.shadow.camera.right = 30;
-        this.sunLight.shadow.camera.top = 30;
-        this.sunLight.shadow.camera.bottom = -30;
+        this.sunLight.shadow.camera.far = 80;
+        this.sunLight.shadow.camera.left = -20;
+        this.sunLight.shadow.camera.right = 20;
+        this.sunLight.shadow.camera.top = 20;
+        this.sunLight.shadow.camera.bottom = -20;
+        this.sunLight.shadow.bias = -0.001;
+        this.sunLight.shadow.normalBias = 0.02;
         this.scene.add(this.sunLight);
         
-        // 半球光（天空/地面）
-        const hemiLight = new THREE.HemisphereLight(0x87CEEB, 0x4a7c59, 0.4);
+        // 半球光（天空暖蓝/地面暖绿）- 增强环境光照层次
+        const hemiLight = new THREE.HemisphereLight(0x8EC8E0, 0x5B8C3C, 0.45);
         this.scene.add(hemiLight);
+        
+        // 补光（从相反方向，填充暗部）
+        const fillLight = new THREE.DirectionalLight(0xD0E8FF, 0.25);
+        fillLight.position.set(-15, 10, -15);
+        this.scene.add(fillLight);
+        
+        // 夜间点光源系统
+        this.nightLights = [];
+        this._createNightLights();
+    },
+    
+    // 创建夜间点光源
+    _createNightLights() {
+        // 谷仓窗户暖光
+        const barnLight = new THREE.PointLight(0xFFA040, 0, 6, 2);
+        barnLight.position.set(-9, 1.5, -7.5);
+        this.scene.add(barnLight);
+        this.nightLights.push({ light: barnLight, maxIntensity: 0.8, type: 'window' });
+        
+        // 谷仓门口灯笼
+        const lantern1 = new THREE.PointLight(0xFFAA30, 0, 5, 2);
+        lantern1.position.set(-9, 2.8, -7);
+        this.scene.add(lantern1);
+        this.nightLights.push({ light: lantern1, maxIntensity: 0.6, type: 'lantern' });
+        
+        // 风车顶部信号灯
+        const millLight = new THREE.PointLight(0xFF6633, 0, 8, 2);
+        millLight.position.set(9, 5, -9);
+        this.scene.add(millLight);
+        this.nightLights.push({ light: millLight, maxIntensity: 0.5, type: 'signal' });
+        
+        // 水井旁路灯
+        const wellLight = new THREE.PointLight(0xFFCC60, 0, 5, 2);
+        wellLight.position.set(8, 2, 8);
+        this.scene.add(wellLight);
+        this.nightLights.push({ light: wellLight, maxIntensity: 0.5, type: 'lantern' });
+    },
+    
+    // 更新夜间灯光
+    _updateNightLights(hour, time) {
+        const isNight = hour >= 19 || hour < 5;
+        const isDusk = hour >= 17 && hour < 19;
+        const isDawn = hour >= 5 && hour < 7;
+        
+        let factor = 0;
+        if (isNight) factor = 1.0;
+        else if (isDusk) factor = (hour - 17) / 2.0;
+        else if (isDawn) factor = 1.0 - (hour - 5) / 2.0;
+        
+        this.nightLights.forEach(nl => {
+            let intensity = nl.maxIntensity * factor;
+            // 灯笼类微微闪烁
+            if (nl.type === 'lantern' && factor > 0) {
+                intensity *= 0.85 + Math.sin(time * 3 + Math.random() * 0.1) * 0.15;
+            }
+            // 信号灯闪烁
+            if (nl.type === 'signal' && factor > 0) {
+                intensity *= Math.sin(time * 1.5) > 0 ? 1.0 : 0.3;
+            }
+            nl.light.intensity = intensity;
+        });
     },
     
     // 创建地形
@@ -134,7 +354,7 @@ const Scene3D = {
         } else {
             // 降级：原始地面
             const groundGeo = new THREE.PlaneGeometry(60, 60, 20, 20);
-            const groundMat = new THREE.MeshLambertMaterial({ color: 0x5a8a3c });
+            const groundMat = new THREE.MeshStandardMaterial({ color: PALETTE.grassBase, roughness: 0.9, metalness: 0.0 });
             const ground = new THREE.Mesh(groundGeo, groundMat);
             ground.rotation.x = -Math.PI / 2;
             ground.receiveShadow = true;
@@ -146,11 +366,10 @@ const Scene3D = {
     
     // 创建围栏
     createFence() {
-        const fenceColor = 0x8B6914;
         const postGeo = new THREE.BoxGeometry(0.2, 1.2, 0.2);
-        const postMat = new THREE.MeshLambertMaterial({ color: fenceColor });
+        const postMat = MatFactory.wood(PALETTE.fenceBase);
         const railGeo = new THREE.BoxGeometry(2.5, 0.15, 0.1);
-        const railMat = new THREE.MeshLambertMaterial({ color: fenceColor });
+        const railMat = MatFactory.wood(PALETTE.fenceLight);
         
         const positions = [];
         for (let i = -12; i <= 12; i += 2.5) {
@@ -222,7 +441,7 @@ const Scene3D = {
             } else {
                 const soilGeo = new THREE.BoxGeometry(3.0, 0.3, 3.0);
 
-                const soilMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+                const soilMat = MatFactory.soil(PALETTE.soilBase);
                 const soil = new THREE.Mesh(soilGeo, soilMat);
                 soil.position.y = 0.15;
                 soil.receiveShadow = true;
@@ -231,7 +450,7 @@ const Scene3D = {
                 group.userData.soilMesh = soil;
                 const borderGeo = new THREE.BoxGeometry(3.3, 0.1, 3.3);
 
-                const borderMat = new THREE.MeshLambertMaterial({ color: 0x5C3317 });
+                const borderMat = MatFactory.wood(PALETTE.woodDark);
                 const border = new THREE.Mesh(borderGeo, borderMat);
                 border.position.y = 0.05;
                 group.add(border);
@@ -274,64 +493,250 @@ const Scene3D = {
     },
 
     
-    // 创建谷仓
+    // 创建谷仓（精致建筑模型）
     createBarn(x, z) {
         const group = new THREE.Group();
         group.position.set(x, 0, z);
         
-        // 主体
-        const bodyGeo = new THREE.BoxGeometry(3, 2.5, 3);
-        const bodyMat = new THREE.MeshLambertMaterial({ color: 0xcc3333 });
-        const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.position.y = 1.25;
+        const wallMat = MatFactory.wall(PALETTE.barnRed);
+        const wallDarkMat = MatFactory.wall(PALETTE.barnRedDark);
+        const woodMat = MatFactory.wood(PALETTE.woodBase);
+        const woodDarkMat = MatFactory.wood(PALETTE.woodDark);
+        const roofMat = MatFactory.roof(PALETTE.roofBrown);
+        const stoneMat = MatFactory.stone(PALETTE.stoneDark);
+        const glassMat = MatFactory.glass(0xFFE8A0, 0.5);
+        
+        // 石基座
+        const baseGeo = new THREE.BoxGeometry(3.6, 0.3, 3.6);
+        const base = new THREE.Mesh(baseGeo, stoneMat);
+        base.position.y = 0.15;
+        base.receiveShadow = true;
+        base.castShadow = true;
+        group.add(base);
+        
+        // 主体墙壁
+        const bodyGeo = new THREE.BoxGeometry(3.2, 2.6, 3.2);
+        const body = new THREE.Mesh(bodyGeo, wallMat);
+        body.position.y = 1.6;
         body.castShadow = true;
+        body.receiveShadow = true;
         group.add(body);
         
-        // 屋顶
-        const roofGeo = new THREE.ConeGeometry(2.5, 1.5, 4);
-        const roofMat = new THREE.MeshLambertMaterial({ color: 0x8B0000 });
+        // 墙面木板纹理条（横向装饰线）
+        for (let i = 0; i < 5; i++) {
+            const plankGeo = new THREE.BoxGeometry(3.25, 0.04, 0.06);
+            const plank = new THREE.Mesh(plankGeo, wallDarkMat);
+            plank.position.set(0, 0.6 + i * 0.5, 1.62);
+            group.add(plank);
+            const plankB = new THREE.Mesh(plankGeo, wallDarkMat);
+            plankB.position.set(0, 0.6 + i * 0.5, -1.62);
+            group.add(plankB);
+        }
+        for (let i = 0; i < 5; i++) {
+            const plankGeo = new THREE.BoxGeometry(0.06, 0.04, 3.25);
+            const plank = new THREE.Mesh(plankGeo, wallDarkMat);
+            plank.position.set(1.62, 0.6 + i * 0.5, 0);
+            group.add(plank);
+            const plankB = new THREE.Mesh(plankGeo, wallDarkMat);
+            plankB.position.set(-1.62, 0.6 + i * 0.5, 0);
+            group.add(plankB);
+        }
+        
+        // 屋顶（四棱锥+屋檐）
+        const roofGeo = new THREE.ConeGeometry(2.7, 1.8, 4);
         const roof = new THREE.Mesh(roofGeo, roofMat);
-        roof.position.y = 3.25;
+        roof.position.y = 3.8;
         roof.rotation.y = Math.PI / 4;
         roof.castShadow = true;
         group.add(roof);
         
-        // 门
-        const doorGeo = new THREE.BoxGeometry(0.8, 1.5, 0.1);
-        const doorMat = new THREE.MeshLambertMaterial({ color: 0x5C3317 });
-        const door = new THREE.Mesh(doorGeo, doorMat);
-        door.position.set(0, 0.75, 1.55);
-        group.add(door);
+        // 屋檐（扁平的四棱锥，比屋顶略大）
+        const eaveGeo = new THREE.ConeGeometry(3.0, 0.2, 4);
+        const eave = new THREE.Mesh(eaveGeo, MatFactory.roof(PALETTE.roofTile));
+        eave.position.y = 2.95;
+        eave.rotation.y = Math.PI / 4;
+        eave.castShadow = true;
+        group.add(eave);
+        
+        // 大门（双开谷仓门）
+        const doorFrameGeo = new THREE.BoxGeometry(1.2, 2.0, 0.12);
+        const doorFrame = new THREE.Mesh(doorFrameGeo, woodDarkMat);
+        doorFrame.position.set(0, 1.3, 1.65);
+        group.add(doorFrame);
+        // 左门板
+        const doorLGeo = new THREE.BoxGeometry(0.55, 1.85, 0.08);
+        const doorL = new THREE.Mesh(doorLGeo, woodMat);
+        doorL.position.set(-0.28, 1.3, 1.7);
+        group.add(doorL);
+        // 右门板
+        const doorR = new THREE.Mesh(doorLGeo, woodMat);
+        doorR.position.set(0.28, 1.3, 1.7);
+        group.add(doorR);
+        // 门上交叉木条
+        const crossGeo = new THREE.BoxGeometry(0.06, 1.6, 0.04);
+        const crossL = new THREE.Mesh(crossGeo, woodDarkMat);
+        crossL.position.set(-0.28, 1.3, 1.75);
+        crossL.rotation.z = 0.35;
+        group.add(crossL);
+        const crossR = new THREE.Mesh(crossGeo, woodDarkMat);
+        crossR.position.set(0.28, 1.3, 1.75);
+        crossR.rotation.z = -0.35;
+        group.add(crossR);
+        
+        // 窗户（两侧各一个）
+        [-1, 1].forEach(side => {
+            // 窗框
+            const winFrameGeo = new THREE.BoxGeometry(0.08, 0.8, 0.7);
+            const winFrame = new THREE.Mesh(winFrameGeo, woodDarkMat);
+            winFrame.position.set(side * 1.65, 2.0, 0);
+            group.add(winFrame);
+            // 窗玻璃
+            const winGlassGeo = new THREE.BoxGeometry(0.04, 0.65, 0.55);
+            const winGlass = new THREE.Mesh(winGlassGeo, glassMat);
+            winGlass.position.set(side * 1.66, 2.0, 0);
+            group.add(winGlass);
+            // 窗台
+            const sillGeo = new THREE.BoxGeometry(0.15, 0.06, 0.8);
+            const sill = new THREE.Mesh(sillGeo, woodMat);
+            sill.position.set(side * 1.65, 1.55, 0);
+            group.add(sill);
+        });
+        
+        // 烟囱
+        const chimneyGeo = new THREE.BoxGeometry(0.5, 1.2, 0.5);
+        const chimney = new THREE.Mesh(chimneyGeo, stoneMat);
+        chimney.position.set(0.8, 4.2, -0.6);
+        chimney.castShadow = true;
+        group.add(chimney);
+        const chimneyTopGeo = new THREE.BoxGeometry(0.6, 0.15, 0.6);
+        const chimneyTop = new THREE.Mesh(chimneyTopGeo, stoneMat);
+        chimneyTop.position.set(0.8, 4.85, -0.6);
+        group.add(chimneyTop);
+        
+        // 门口灯笼挂架
+        const hookGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.4, 4);
+        const hook = new THREE.Mesh(hookGeo, MatFactory.rustMetal());
+        hook.position.set(0.8, 2.7, 1.68);
+        hook.rotation.z = -Math.PI / 4;
+        group.add(hook);
+        // 灯笼体
+        const lanternGeo = new THREE.CylinderGeometry(0.08, 0.1, 0.2, 8);
+        const lantern = new THREE.Mesh(lanternGeo, MatFactory.emissive(0xFFA040, 0.3));
+        lantern.position.set(1.0, 2.5, 1.68);
+        group.add(lantern);
         
         this.scene.add(group);
     },
     
-    // 创建风车
+    // 创建风车（精致模型）
     createWindmill(x, z) {
         const group = new THREE.Group();
         group.position.set(x, 0, z);
         group.userData = { type: 'windmill' };
         
-        // 塔身
-        const towerGeo = new THREE.CylinderGeometry(0.3, 0.5, 4, 8);
-        const towerMat = new THREE.MeshLambertMaterial({ color: 0xdddddd });
-        const tower = new THREE.Mesh(towerGeo, towerMat);
-        tower.position.y = 2;
+        const millWallMat = MatFactory.wall(PALETTE.millWhite);
+        const metalMat = MatFactory.metal(PALETTE.millMetal);
+        const woodMat = MatFactory.wood(PALETTE.woodBase);
+        const roofMat = MatFactory.roof(PALETTE.roofBrown);
+        const stoneMat = MatFactory.stone(PALETTE.stoneDark);
+        
+        // 石基座
+        const baseGeo = new THREE.CylinderGeometry(0.9, 1.1, 0.4, 12);
+        const base = new THREE.Mesh(baseGeo, stoneMat);
+        base.position.y = 0.2;
+        base.receiveShadow = true;
+        base.castShadow = true;
+        group.add(base);
+        
+        // 塔身（下粗上细的圆台）
+        const towerGeo = new THREE.CylinderGeometry(0.4, 0.75, 4.2, 10);
+        const tower = new THREE.Mesh(towerGeo, millWallMat);
+        tower.position.y = 2.5;
         tower.castShadow = true;
+        tower.receiveShadow = true;
         group.add(tower);
         
-        // 风叶
+        // 塔身装饰环（两道石环）
+        [1.5, 3.0].forEach(h => {
+            const ringGeo = new THREE.TorusGeometry(0.62 - h * 0.04, 0.04, 6, 16);
+            const ring = new THREE.Mesh(ringGeo, stoneMat);
+            ring.position.y = h;
+            ring.rotation.x = Math.PI / 2;
+            group.add(ring);
+        });
+        
+        // 塔身门
+        const doorGeo = new THREE.BoxGeometry(0.45, 1.0, 0.1);
+        const door = new THREE.Mesh(doorGeo, woodMat);
+        door.position.set(0, 0.9, 0.72);
+        group.add(door);
+        // 门框
+        const doorFrameGeo = new THREE.BoxGeometry(0.55, 1.1, 0.06);
+        const doorFrame = new THREE.Mesh(doorFrameGeo, MatFactory.wood(PALETTE.woodDark));
+        doorFrame.position.set(0, 0.95, 0.73);
+        group.add(doorFrame);
+        
+        // 小窗口
+        const winGeo = new THREE.CircleGeometry(0.12, 8);
+        const winMat = MatFactory.glass(0xFFE8A0, 0.6);
+        [0, Math.PI / 2, Math.PI].forEach(angle => {
+            const win = new THREE.Mesh(winGeo, winMat);
+            const r = 0.52;
+            win.position.set(Math.sin(angle) * r, 3.2, Math.cos(angle) * r);
+            win.lookAt(0, 3.2, 0);
+            group.add(win);
+        });
+        
+        // 圆锥屋顶
+        const capGeo = new THREE.ConeGeometry(0.55, 0.8, 10);
+        const cap = new THREE.Mesh(capGeo, roofMat);
+        cap.position.y = 5.0;
+        cap.castShadow = true;
+        group.add(cap);
+        
+        // 屋顶尖顶装饰
+        const finialGeo = new THREE.SphereGeometry(0.06, 6, 6);
+        const finial = new THREE.Mesh(finialGeo, metalMat);
+        finial.position.y = 5.45;
+        group.add(finial);
+        
+        // 风叶轴心
+        const hubGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.15, 8);
+        const hub = new THREE.Mesh(hubGeo, metalMat);
+        hub.position.set(0, 4.2, 0.5);
+        hub.rotation.x = Math.PI / 2;
+        group.add(hub);
+        
+        // 风叶组
         const bladeGroup = new THREE.Group();
-        bladeGroup.position.y = 4;
+        bladeGroup.position.set(0, 4.2, 0.55);
         bladeGroup.userData = { isWindmill: true };
         
+        const bladeMat = MatFactory.wood(PALETTE.millBlade);
+        const bladeFrameMat = MatFactory.wood(PALETTE.woodLight);
+        
         for (let i = 0; i < 4; i++) {
-            const bladeGeo = new THREE.BoxGeometry(0.2, 2, 0.05);
-            const bladeMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-            const blade = new THREE.Mesh(bladeGeo, bladeMat);
-            blade.position.y = 1;
-            blade.rotation.z = (i * Math.PI) / 2;
-            bladeGroup.add(blade);
+            const bladeArm = new THREE.Group();
+            bladeArm.rotation.z = (i * Math.PI) / 2;
+            
+            // 主臂杆
+            const armGeo = new THREE.BoxGeometry(0.06, 2.2, 0.04);
+            const arm = new THREE.Mesh(armGeo, bladeFrameMat);
+            arm.position.y = 1.1;
+            bladeArm.add(arm);
+            
+            // 风帆面（梯形近似，用两段扁方块）
+            const sailGeo1 = new THREE.BoxGeometry(0.5, 1.4, 0.02);
+            const sail1 = new THREE.Mesh(sailGeo1, bladeMat);
+            sail1.position.set(0.15, 1.2, 0);
+            bladeArm.add(sail1);
+            
+            const sailGeo2 = new THREE.BoxGeometry(0.35, 0.6, 0.02);
+            const sail2 = new THREE.Mesh(sailGeo2, bladeMat);
+            sail2.position.set(0.1, 2.05, 0);
+            bladeArm.add(sail2);
+            
+            bladeGroup.add(bladeArm);
         }
         
         group.add(bladeGroup);
@@ -339,29 +744,81 @@ const Scene3D = {
         this.windmillBlades = bladeGroup;
     },
     
-    // 创建树
+    // 创建树（多样化模型）
     createTree(x, z) {
         const group = new THREE.Group();
         group.position.set(x, 0, z);
         
+        // 随机变化参数
+        const scale = 0.8 + Math.random() * 0.5;
+        const treeType = Math.random();
+        
         // 树干
-        const trunkGeo = new THREE.CylinderGeometry(0.2, 0.3, 1.5, 8);
-        const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5C3317 });
-        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-        trunk.position.y = 0.75;
+        const trunkH = (1.2 + Math.random() * 0.6) * scale;
+        const trunkR1 = (0.12 + Math.random() * 0.06) * scale;
+        const trunkR2 = (0.22 + Math.random() * 0.08) * scale;
+        const trunkGeo = new THREE.CylinderGeometry(trunkR1, trunkR2, trunkH, 7);
+        const trunk = new THREE.Mesh(trunkGeo, MatFactory.wood(PALETTE.woodDark));
+        trunk.position.y = trunkH / 2;
         trunk.castShadow = true;
         group.add(trunk);
         
-        // 树冠（多层）
-        const colors = [0x2d8a2d, 0x3aaa3a, 0x4ccc4c];
-        [2.5, 2, 1.5].forEach((size, i) => {
-            const leafGeo = new THREE.ConeGeometry(size * 0.6, size * 0.8, 8);
-            const leafMat = new THREE.MeshLambertMaterial({ color: colors[i] });
-            const leaf = new THREE.Mesh(leafGeo, leafMat);
-            leaf.position.y = 1.5 + i * 0.8;
-            leaf.castShadow = true;
-            group.add(leaf);
-        });
+        // 暴露根系
+        for (let i = 0; i < 3; i++) {
+            const rootAngle = (i / 3) * Math.PI * 2 + Math.random() * 0.5;
+            const rootGeo = new THREE.CylinderGeometry(0.02 * scale, 0.05 * scale, 0.4 * scale, 4);
+            const root = new THREE.Mesh(rootGeo, MatFactory.wood(PALETTE.woodDark));
+            root.position.set(Math.cos(rootAngle) * 0.18 * scale, 0.08, Math.sin(rootAngle) * 0.18 * scale);
+            root.rotation.z = (Math.random() - 0.5) * 0.6;
+            root.rotation.x = (Math.random() - 0.5) * 0.6;
+            group.add(root);
+        }
+        
+        if (treeType < 0.5) {
+            // 类型A：圆形阔叶树（多球叠加）
+            const leafColors = [PALETTE.leafDark, PALETTE.leafBase, PALETTE.leafLight];
+            const crownCenterY = trunkH + 0.6 * scale;
+            const crownR = (0.9 + Math.random() * 0.4) * scale;
+            
+            // 主冠
+            const mainGeo = new THREE.SphereGeometry(crownR, 8, 7);
+            const mainLeaf = new THREE.Mesh(mainGeo, MatFactory.foliage(leafColors[1]));
+            mainLeaf.position.y = crownCenterY;
+            mainLeaf.scale.set(1, 0.8, 1);
+            mainLeaf.castShadow = true;
+            group.add(mainLeaf);
+            
+            // 副冠（2-3个偏移球体增加蓬松感）
+            const subCount = 2 + Math.floor(Math.random() * 2);
+            for (let i = 0; i < subCount; i++) {
+                const angle = (i / subCount) * Math.PI * 2 + Math.random();
+                const r = crownR * 0.5;
+                const subR = crownR * (0.5 + Math.random() * 0.2);
+                const subGeo = new THREE.SphereGeometry(subR, 7, 6);
+                const subLeaf = new THREE.Mesh(subGeo, MatFactory.foliage(leafColors[Math.floor(Math.random() * 3)]));
+                subLeaf.position.set(
+                    Math.cos(angle) * r,
+                    crownCenterY + (Math.random() - 0.3) * crownR * 0.4,
+                    Math.sin(angle) * r
+                );
+                subLeaf.castShadow = true;
+                group.add(subLeaf);
+            }
+        } else {
+            // 类型B：锥形针叶树（多层锥体）
+            const coneColors = [PALETTE.leafDark, PALETTE.leafBase, PALETTE.leafYellow];
+            const layers = 3 + Math.floor(Math.random() * 2);
+            for (let i = 0; i < layers; i++) {
+                const layerScale = 1 - i * 0.18;
+                const coneR = (0.7 * layerScale + Math.random() * 0.1) * scale;
+                const coneH = (0.7 + Math.random() * 0.2) * scale;
+                const coneGeo = new THREE.ConeGeometry(coneR, coneH, 7);
+                const cone = new THREE.Mesh(coneGeo, MatFactory.foliage(coneColors[i % 3]));
+                cone.position.y = trunkH + i * 0.55 * scale;
+                cone.castShadow = true;
+                group.add(cone);
+            }
+        }
         
         this.scene.add(group);
     },
@@ -373,15 +830,14 @@ const Scene3D = {
         
         // 井身
         const wellGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.8, 12);
-        const wellMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
-        const well = new THREE.Mesh(wellGeo, wellMat);
+        const well = new THREE.Mesh(wellGeo, MatFactory.stone());
         well.position.y = 0.4;
         well.castShadow = true;
         group.add(well);
         
         // 井架
         const postGeo = new THREE.BoxGeometry(0.1, 1.5, 0.1);
-        const postMat = new THREE.MeshLambertMaterial({ color: 0x5C3317 });
+        const postMat = MatFactory.wood(PALETTE.woodDark);
         [-0.5, 0.5].forEach(x => {
             const post = new THREE.Mesh(postGeo, postMat);
             post.position.set(x, 1.15, 0);
@@ -402,14 +858,13 @@ const Scene3D = {
         group.position.set(x, 0, z);
         
         const stemGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.4, 6);
-        const stemMat = new THREE.MeshLambertMaterial({ color: 0x44aa44 });
-        const stem = new THREE.Mesh(stemGeo, stemMat);
+        const stem = new THREE.Mesh(stemGeo, MatFactory.foliage(0x44aa44));
         stem.position.y = 0.2;
         group.add(stem);
         
-        const colors = [0xff6688, 0xffaa00, 0xff4444, 0xaa44ff, 0xffff44];
+        const colors = [PALETTE.flowerPink, PALETTE.flowerYellow, PALETTE.flowerPurple, PALETTE.flowerWhite];
         const flowerGeo = new THREE.SphereGeometry(0.12, 8, 8);
-        const flowerMat = new THREE.MeshLambertMaterial({ color: colors[Math.floor(Math.random() * colors.length)] });
+        const flowerMat = MatFactory.foliage(colors[Math.floor(Math.random() * colors.length)]);
         const flower = new THREE.Mesh(flowerGeo, flowerMat);
         flower.position.y = 0.45;
         group.add(flower);
@@ -435,7 +890,10 @@ const Scene3D = {
         group.position.set(x, y, z);
         group.userData = { type: 'cloud', speed: 0.5 + Math.random() * 0.5 };
         
-        const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
+        const cloudMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff, transparent: true, opacity: 0.88,
+            roughness: 1.0, metalness: 0.0
+        });
         const sizes = [1.5, 1, 1.2, 0.8];
         const offsets = [[0, 0, 0], [1.2, -0.3, 0], [-1.2, -0.3, 0], [0.6, 0.3, 0]];
         
@@ -515,13 +973,13 @@ const Scene3D = {
         } else {
             // 降级：通用幼苗
             const stemGeo = new THREE.CylinderGeometry(0.05 * scale, 0.08 * scale, 0.8 * scale, 6);
-            const stemMat = new THREE.MeshLambertMaterial({ color: 0x44aa44 });
+            const stemMat = MatFactory.foliage(0x44aa44);
             const stem = new THREE.Mesh(stemGeo, stemMat);
             stem.position.y = 0.4 * scale;
             stem.castShadow = true;
             group.add(stem);
             const leafGeo = new THREE.SphereGeometry(0.3 * scale, 8, 8);
-            const leafMat = new THREE.MeshLambertMaterial({ color: crop.color });
+            const leafMat = MatFactory.foliage(crop.color);
             const leaf = new THREE.Mesh(leafGeo, leafMat);
             leaf.position.y = 0.8 * scale;
             leaf.scale.y = 0.6;
@@ -532,7 +990,7 @@ const Scene3D = {
         // 浇水效果
         if (plot.watered) {
             const waterGeo = new THREE.SphereGeometry(0.05, 6, 6);
-            const waterMat = new THREE.MeshLambertMaterial({ color: 0x4488ff, transparent: true, opacity: 0.7 });
+            const waterMat = new THREE.MeshStandardMaterial({ color: 0x4488ff, transparent: true, opacity: 0.7, roughness: 0.2, metalness: 0.0 });
             for (let i = 0; i < 3; i++) {
                 const drop = new THREE.Mesh(waterGeo, waterMat);
                 drop.position.set((Math.random() - 0.5) * 0.5, 0.1 + Math.random() * 0.3, (Math.random() - 0.5) * 0.5);
@@ -552,13 +1010,13 @@ const Scene3D = {
         } else {
             // 降级：通用成熟模型
             const stemGeo = new THREE.CylinderGeometry(0.06, 0.1, 1.2, 6);
-            const stemMat = new THREE.MeshLambertMaterial({ color: 0x44aa44 });
+            const stemMat = MatFactory.foliage(0x44aa44);
             const stem = new THREE.Mesh(stemGeo, stemMat);
             stem.position.y = 0.6;
             stem.castShadow = true;
             group.add(stem);
             const fruitGeo = new THREE.SphereGeometry(0.4, 10, 10);
-            const fruitMat = new THREE.MeshLambertMaterial({ color: crop.color });
+            const fruitMat = MatFactory.foliage(crop.color);
             const fruit = new THREE.Mesh(fruitGeo, fruitMat);
             fruit.position.y = 1.3;
             fruit.castShadow = true;
@@ -568,7 +1026,9 @@ const Scene3D = {
         // 完美品质光效
         if (plot.cropQuality === 'perfect') {
             const glowGeo = new THREE.SphereGeometry(0.6, 8, 8);
-            const glowMat = new THREE.MeshLambertMaterial({ color: 0xffd700, transparent: true, opacity: 0.3 });
+            const glowMat = MatFactory.emissive(0xffd700, 0.5);
+            glowMat.transparent = true;
+            glowMat.opacity = 0.3;
             const glow = new THREE.Mesh(glowGeo, glowMat);
             glow.position.y = 1.3;
             group.add(glow);
@@ -584,11 +1044,11 @@ const Scene3D = {
 
     // 创建鸡模型
     _buildChicken(group, color) {
-        const bodyMat = new THREE.MeshLambertMaterial({ color: color || 0xf5f0e0 });
-        const legMat = new THREE.MeshLambertMaterial({ color: 0xf5a623 });
-        const combMat = new THREE.MeshLambertMaterial({ color: 0xcc2200 });
-        const beakMat = new THREE.MeshLambertMaterial({ color: 0xf5a623 });
-        const eyeMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+        const bodyMat = MatFactory.toon(color || 0xf5f0e0);
+        const legMat = MatFactory.toon(0xf5a623);
+        const combMat = MatFactory.toon(0xcc2200);
+        const beakMat = MatFactory.toon(0xf5a623);
+        const eyeMat = MatFactory.toon(0x111111);
 
         // 身体 - 圆润椭球形，前胸挺起
         const bodyGeo = new THREE.SphereGeometry(0.22, 10, 8);
@@ -699,11 +1159,11 @@ const Scene3D = {
 
     // 创建羊模型
     _buildSheep(group, color) {
-        const woolMat = new THREE.MeshLambertMaterial({ color: color || 0xf0ede8 });
-        const skinMat = new THREE.MeshLambertMaterial({ color: 0xd4c5a9 });
-        const legMat = new THREE.MeshLambertMaterial({ color: 0x888880 });
-        const eyeMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
-        const pupilMat = new THREE.MeshLambertMaterial({ color: 0x222200 });
+        const woolMat = MatFactory.toon(color || 0xf0ede8);
+        const skinMat = MatFactory.toon(0xd4c5a9);
+        const legMat = MatFactory.toon(0x888880);
+        const eyeMat = MatFactory.toon(0x111111);
+        const pupilMat = MatFactory.toon(0x222200);
 
         // 身体 - 厚实圆筒形，覆盖蓬松羊毛
         const bodyGeo = new THREE.SphereGeometry(0.38, 10, 8);
@@ -785,7 +1245,7 @@ const Scene3D = {
             lg.add(leg);
             // 蹄子（偶蹄）
             const hoofGeo = new THREE.BoxGeometry(0.08, 0.06, 0.1);
-            const hoofMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
+            const hoofMat = MatFactory.toon(0x333333);
             const hoof = new THREE.Mesh(hoofGeo, hoofMat);
             hoof.position.y = -0.2;
             lg.add(hoof);
@@ -819,14 +1279,14 @@ const Scene3D = {
         const SCALE = 0.42; // 整体缩放系数，适配游戏场景
 
         // --- 材质定义 ---
-        const whiteMat    = new THREE.MeshLambertMaterial({ color: 0xF5F5F0 }); // 奶白色
-        const blackMat    = new THREE.MeshLambertMaterial({ color: 0x1A1A1A, side: THREE.DoubleSide }); // 黑色斑块
-        const pinkMat     = new THREE.MeshLambertMaterial({ color: 0xFFB6C1 }); // 粉色（鼻子/乳房）
-        const brownMat    = new THREE.MeshLambertMaterial({ color: 0x4A3728 }); // 深棕（眼睛）
-        const hornMat     = new THREE.MeshLambertMaterial({ color: 0xF5DEB3 }); // 米黄（犄角）
-        const hoofMat     = new THREE.MeshLambertMaterial({ color: 0x3D3D3D }); // 深灰（蹄子）
-        const whiteSolid  = new THREE.MeshLambertMaterial({ color: 0xFFFFFF }); // 纯白（眼白/高光）
-        const darkPinkMat = new THREE.MeshLambertMaterial({ color: 0xCC7788 }); // 深粉（鼻孔）
+        const whiteMat    = MatFactory.toon(0xF5F5F0); // 奶白色
+        const blackMat    = new THREE.MeshStandardMaterial({ color: 0x1A1A1A, side: THREE.DoubleSide, roughness: 0.6, metalness: 0.0 }); // 黑色斑块
+        const pinkMat     = MatFactory.toon(0xFFB6C1); // 粉色（鼻子/乳房）
+        const brownMat    = MatFactory.toon(0x4A3728); // 深棕（眼睛）
+        const hornMat     = MatFactory.toon(0xF5DEB3); // 米黄（犄角）
+        const hoofMat     = MatFactory.toon(0x3D3D3D); // 深灰（蹄子）
+        const whiteSolid  = MatFactory.toon(0xFFFFFF); // 纯白（眼白/高光）
+        const darkPinkMat = MatFactory.toon(0xCC7788); // 深粉（鼻孔）
 
         // ===== 整体朝向修正 =====
         // 游戏移动方向用 atan2(dx, dz)，z正方向为前进方向
@@ -1045,10 +1505,10 @@ const Scene3D = {
 
     // 创建猪模型
     _buildPig(group, color) {
-        const bodyMat = new THREE.MeshLambertMaterial({ color: color || 0xffb6c1 });
-        const snoutMat = new THREE.MeshLambertMaterial({ color: 0xff9aaa });
-        const eyeMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
-        const legMat = new THREE.MeshLambertMaterial({ color: 0xffaabb });
+        const bodyMat = MatFactory.toon(color || 0xffb6c1);
+        const snoutMat = MatFactory.toon(0xff9aaa);
+        const eyeMat = MatFactory.toon(0x111111);
+        const legMat = MatFactory.toon(0xffaabb);
 
         // 身体 - 滚圆桶形
         const bodyGeo = new THREE.SphereGeometry(0.38, 10, 8);
@@ -1075,7 +1535,7 @@ const Scene3D = {
         headGroup.add(snout);
         // 鼻孔
         const nostrilGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.04, 8);
-        const nostrilMat = new THREE.MeshLambertMaterial({ color: 0xcc7788 });
+        const nostrilMat = MatFactory.toon(0xcc7788);
         [-0.05, 0.05].forEach(nx => {
             const nostril = new THREE.Mesh(nostrilGeo, nostrilMat);
             nostril.rotation.x = Math.PI / 2;
@@ -1118,7 +1578,7 @@ const Scene3D = {
             const leg = new THREE.Mesh(legGeo, legMat);
             lg.add(leg);
             const hoofGeo = new THREE.BoxGeometry(0.1, 0.06, 0.1);
-            const hoofMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
+            const hoofMat = MatFactory.toon(0x333333);
             const hoof = new THREE.Mesh(hoofGeo, hoofMat);
             hoof.position.y = -0.17;
             lg.add(hoof);
@@ -1153,11 +1613,11 @@ const Scene3D = {
 
     // 创建鸭子模型
     _buildDuck(group, color) {
-        const bodyMat = new THREE.MeshLambertMaterial({ color: color || 0x88aaff });
-        const billMat = new THREE.MeshLambertMaterial({ color: 0xffaa00 });
-        const legMat  = new THREE.MeshLambertMaterial({ color: 0xffaa00 });
-        const eyeMat  = new THREE.MeshLambertMaterial({ color: 0x111111 });
-        const whiteMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+        const bodyMat = MatFactory.toon(color || 0x88aaff);
+        const billMat = MatFactory.toon(0xffaa00);
+        const legMat  = MatFactory.toon(0xffaa00);
+        const eyeMat  = MatFactory.toon(0x111111);
+        const whiteMat = MatFactory.toon(0xffffff);
 
         // 身体 - 圆润椭球，尾部上翘
         const bodyGeo = new THREE.SphereGeometry(0.22, 10, 8);
@@ -1307,7 +1767,7 @@ const Scene3D = {
         // 产出标记
         if (animal.hasProduct) {
             const markerGeo = new THREE.SphereGeometry(0.2, 8, 8);
-            const markerMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+            const markerMat = MatFactory.emissive(0xffd700, 0.6);
             const marker = new THREE.Mesh(markerGeo, markerMat);
             // 根据动物大小调整标记高度
             const heights = { chicken: 1.2, duck: 1.1, sheep: 1.8, cow: 1.1, pig: 1.6 };
@@ -1405,7 +1865,7 @@ const Scene3D = {
         const existing = mesh.children.find(c => c.userData.isProductMarker);
         if (hasProduct && !existing) {
             const markerGeo = new THREE.SphereGeometry(0.2, 8, 8);
-            const markerMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+            const markerMat = MatFactory.emissive(0xffd700, 0.6);
             const marker = new THREE.Mesh(markerGeo, markerMat);
             const heights = { chicken: 1.2, duck: 1.1, sheep: 1.8, cow: 1.1, pig: 1.6 };
             marker.position.y = heights[mesh.userData.animalType] || 1.8;
@@ -1425,7 +1885,7 @@ const Scene3D = {
         
         for (let i = 0; i < 15; i++) {
             const geo = new THREE.SphereGeometry(0.08, 6, 6);
-            const mat = new THREE.MeshLambertMaterial({ color: color || 0xffd700 });
+            const mat = new THREE.MeshStandardMaterial({ color: color || 0xffd700, roughness: 0.4, metalness: 0.3 });
             const particle = new THREE.Mesh(geo, mat);
             particle.position.copy(plot.position);
             particle.position.y = 1;
@@ -1458,7 +1918,7 @@ const Scene3D = {
         for (let i = 0; i < 8; i++) {
 
             const geo = new THREE.SphereGeometry(0.06, 6, 6);
-            const mat = new THREE.MeshLambertMaterial({ color: 0x4488ff, transparent: true, opacity: 0.8 });
+            const mat = new THREE.MeshStandardMaterial({ color: 0x4488ff, transparent: true, opacity: 0.8, roughness: 0.2, metalness: 0.0 });
             const drop = new THREE.Mesh(geo, mat);
             drop.position.copy(plot.position);
             drop.position.y = 2;
@@ -2152,6 +2612,9 @@ const Scene3D = {
             Math.sin(sunAngle) * 20
         );
         const skyBrightness = Math.max(0.15, Math.abs(Math.sin(sunAngle)));
+
+        // 夜间点光源更新（灯笼/窗户/信号灯）
+        this._updateNightLights(hour, time);
 
         // 天气视觉系统更新（昼夜光影 + 雨雪粒子）
         if (typeof WeatherSystem !== 'undefined') {

@@ -76,8 +76,8 @@ const PlantBuilder = {
 
     // 通用：创建幼苗（阶段1-2）
     buildSeedling(group, config, scale) {
-        const stemMat = new THREE.MeshLambertMaterial({ color: config.colors.stem || 0x44aa44 });
-        const leafMat = new THREE.MeshLambertMaterial({ color: config.colors.leaf || 0x44aa44 });
+        const stemMat = new THREE.MeshStandardMaterial({ color: config.colors.stem || 0x44aa44, roughness: 0.8, metalness: 0.0 });
+        const leafMat = new THREE.MeshStandardMaterial({ color: config.colors.leaf || 0x44aa44, roughness: 0.8, metalness: 0.0 });
 
         // 茎
         const stemGeo = new THREE.CylinderGeometry(0.03 * scale, 0.05 * scale, 0.5 * scale, 5);
@@ -100,8 +100,8 @@ const PlantBuilder = {
 
     // 萝卜
     buildRadish(group, config, stage) {
-        const leafMat = new THREE.MeshLambertMaterial({ color: config.colors.leaf });
-        const rootMat = new THREE.MeshLambertMaterial({ color: config.colors.fruit });
+        const leafMat = new THREE.MeshStandardMaterial({ color: config.colors.leaf, roughness: 0.8, metalness: 0.0 });
+        const rootMat = new THREE.MeshStandardMaterial({ color: config.colors.fruit, roughness: 0.8, metalness: 0.0 });
         const scale = [0, 0.15, 0.4, 0.7, 1.0][stage] || 1.0;
 
         if (stage <= 1) { this.buildSeedling(group, config, scale * 1.5); return; }
@@ -116,7 +116,7 @@ const PlantBuilder = {
 
             // 叶柄
             const stalkGeo = new THREE.CylinderGeometry(0.015 * scale, 0.02 * scale, 0.5 * scale, 4);
-            const stalkMat = new THREE.MeshLambertMaterial({ color: 0x3CB371 });
+            const stalkMat = new THREE.MeshStandardMaterial({ color: 0x3CB371, roughness: 0.8, metalness: 0.0 });
             const stalk = new THREE.Mesh(stalkGeo, stalkMat);
             stalk.rotation.z = 0.6;
             stalk.position.set(0.15 * scale, 0.3 * scale, 0);
@@ -145,7 +145,7 @@ const PlantBuilder = {
             // 横向纹理环
             for (let r = 0; r < 3; r++) {
                 const ringGeo = new THREE.TorusGeometry(0.1 * scale - r * 0.025 * scale, 0.012 * scale, 4, 12);
-                const ring = new THREE.Mesh(ringGeo, new THREE.MeshLambertMaterial({ color: 0xCC5500 }));
+                const ring = new THREE.Mesh(ringGeo, new THREE.MeshStandardMaterial({ color: 0xCC5500, roughness: 0.8, metalness: 0.0 }));
                 ring.rotation.x = Math.PI / 2;
                 ring.position.y = -0.08 * scale - r * 0.08 * scale;
                 group.add(ring);
@@ -156,8 +156,8 @@ const PlantBuilder = {
 
     // 生菜
     buildLettuce(group, config, stage) {
-        const outerMat = new THREE.MeshLambertMaterial({ color: config.colors.leaf });
-        const innerMat = new THREE.MeshLambertMaterial({ color: config.colors.fruit });
+        const outerMat = new THREE.MeshStandardMaterial({ color: config.colors.leaf, roughness: 0.8, metalness: 0.0 });
+        const innerMat = new THREE.MeshStandardMaterial({ color: config.colors.fruit, roughness: 0.8, metalness: 0.0 });
         const scale = [0, 0.15, 0.4, 0.7, 1.0][stage] || 1.0;
 
         if (stage <= 1) { this.buildSeedling(group, config, scale * 1.5); return; }
@@ -189,10 +189,10 @@ const PlantBuilder = {
 
     // 番茄
     buildTomato(group, config, stage) {
-        const leafMat = new THREE.MeshLambertMaterial({ color: config.colors.leaf });
-        const stemMat = new THREE.MeshLambertMaterial({ color: config.colors.stem });
-        const fruitMat = new THREE.MeshLambertMaterial({ color: config.colors.fruit });
-        const calyxMat = new THREE.MeshLambertMaterial({ color: config.colors.calyx });
+        const leafMat = new THREE.MeshStandardMaterial({ color: config.colors.leaf, roughness: 0.8, metalness: 0.0 });
+        const stemMat = new THREE.MeshStandardMaterial({ color: config.colors.stem, roughness: 0.8, metalness: 0.0 });
+        const fruitMat = new THREE.MeshStandardMaterial({ color: config.colors.fruit, roughness: 0.8, metalness: 0.0 });
+        const calyxMat = new THREE.MeshStandardMaterial({ color: config.colors.calyx, roughness: 0.8, metalness: 0.0 });
         const scale = [0, 0.15, 0.4, 0.7, 1.0][stage] || 1.0;
 
         if (stage <= 1) { this.buildSeedling(group, config, scale * 1.5); return; }
@@ -254,11 +254,11 @@ const PlantBuilder = {
 
     // 玉米
     buildCorn(group, config, stage) {
-        const leafMat = new THREE.MeshLambertMaterial({ color: config.colors.leaf });
-        const stemMat = new THREE.MeshLambertMaterial({ color: config.colors.stem });
-        const huskMat = new THREE.MeshLambertMaterial({ color: config.colors.husk });
-        const fruitMat = new THREE.MeshLambertMaterial({ color: config.colors.fruit });
-        const silkMat = new THREE.MeshLambertMaterial({ color: config.colors.silk });
+        const leafMat = new THREE.MeshStandardMaterial({ color: config.colors.leaf, roughness: 0.8, metalness: 0.0 });
+        const stemMat = new THREE.MeshStandardMaterial({ color: config.colors.stem, roughness: 0.8, metalness: 0.0 });
+        const huskMat = new THREE.MeshStandardMaterial({ color: config.colors.husk, roughness: 0.8, metalness: 0.0 });
+        const fruitMat = new THREE.MeshStandardMaterial({ color: config.colors.fruit, roughness: 0.8, metalness: 0.0 });
+        const silkMat = new THREE.MeshStandardMaterial({ color: config.colors.silk, roughness: 0.8, metalness: 0.0 });
         const scale = [0, 0.15, 0.4, 0.7, 1.0][stage] || 1.0;
 
         if (stage <= 1) { this.buildSeedling(group, config, scale * 1.5); return; }
@@ -275,7 +275,7 @@ const PlantBuilder = {
         const nodeCount = 3;
         for (let n = 0; n < nodeCount; n++) {
             const nodeGeo = new THREE.CylinderGeometry(0.08 * scale, 0.08 * scale, 0.04 * scale, 7);
-            const node = new THREE.Mesh(nodeGeo, new THREE.MeshLambertMaterial({ color: 0x2E8B57 }));
+            const node = new THREE.Mesh(nodeGeo, new THREE.MeshStandardMaterial({ color: 0x2E8B57, roughness: 0.8, metalness: 0.0 }));
             node.position.y = (0.4 + n * 0.45) * scale;
             group.add(node);
         }
@@ -335,8 +335,8 @@ const PlantBuilder = {
 
     // 小麦
     buildWheat(group, config, stage) {
-        const stemMat = new THREE.MeshLambertMaterial({ color: stage >= 4 ? config.colors.fruit : config.colors.leaf });
-        const earMat = new THREE.MeshLambertMaterial({ color: config.colors.fruit });
+        const stemMat = new THREE.MeshStandardMaterial({ color: stage >= 4 ? config.colors.fruit : config.colors.leaf, roughness: 0.8, metalness: 0.0 });
+        const earMat = new THREE.MeshStandardMaterial({ color: config.colors.fruit, roughness: 0.8, metalness: 0.0 });
         const scale = [0, 0.15, 0.4, 0.7, 1.0][stage] || 1.0;
 
         if (stage <= 1) { this.buildSeedling(group, config, scale * 1.5); return; }
@@ -380,10 +380,10 @@ const PlantBuilder = {
 
     // 草莓
     buildStrawberry(group, config, stage) {
-        const leafMat = new THREE.MeshLambertMaterial({ color: config.colors.leaf });
-        const fruitMat = new THREE.MeshLambertMaterial({ color: config.colors.fruit });
-        const seedMat = new THREE.MeshLambertMaterial({ color: config.colors.seed });
-        const stemMat = new THREE.MeshLambertMaterial({ color: config.colors.stem });
+        const leafMat = new THREE.MeshStandardMaterial({ color: config.colors.leaf, roughness: 0.8, metalness: 0.0 });
+        const fruitMat = new THREE.MeshStandardMaterial({ color: config.colors.fruit, roughness: 0.8, metalness: 0.0 });
+        const seedMat = new THREE.MeshStandardMaterial({ color: config.colors.seed, roughness: 0.8, metalness: 0.0 });
+        const stemMat = new THREE.MeshStandardMaterial({ color: config.colors.stem, roughness: 0.8, metalness: 0.0 });
         const scale = [0, 0.15, 0.4, 0.7, 1.0][stage] || 1.0;
 
         if (stage <= 1) { this.buildSeedling(group, config, scale * 1.5); return; }
@@ -441,9 +441,9 @@ const PlantBuilder = {
 
     // 蓝莓
     buildBlueberry(group, config, stage) {
-        const leafMat = new THREE.MeshLambertMaterial({ color: config.colors.leaf });
-        const fruitMat = new THREE.MeshLambertMaterial({ color: config.colors.fruit });
-        const stemMat = new THREE.MeshLambertMaterial({ color: config.colors.stem });
+        const leafMat = new THREE.MeshStandardMaterial({ color: config.colors.leaf, roughness: 0.8, metalness: 0.0 });
+        const fruitMat = new THREE.MeshStandardMaterial({ color: config.colors.fruit, roughness: 0.8, metalness: 0.0 });
+        const stemMat = new THREE.MeshStandardMaterial({ color: config.colors.stem, roughness: 0.8, metalness: 0.0 });
         const scale = [0, 0.15, 0.4, 0.7, 1.0][stage] || 1.0;
 
         if (stage <= 1) { this.buildSeedling(group, config, scale * 1.5); return; }
@@ -487,10 +487,10 @@ const PlantBuilder = {
 
     // 南瓜
     buildPumpkin(group, config, stage) {
-        const leafMat = new THREE.MeshLambertMaterial({ color: config.colors.leaf });
-        const fruitMat = new THREE.MeshLambertMaterial({ color: config.colors.fruit });
-        const grooveMat = new THREE.MeshLambertMaterial({ color: config.colors.groove });
-        const stemMat = new THREE.MeshLambertMaterial({ color: config.colors.stem });
+        const leafMat = new THREE.MeshStandardMaterial({ color: config.colors.leaf, roughness: 0.8, metalness: 0.0 });
+        const fruitMat = new THREE.MeshStandardMaterial({ color: config.colors.fruit, roughness: 0.8, metalness: 0.0 });
+        const grooveMat = new THREE.MeshStandardMaterial({ color: config.colors.groove, roughness: 0.8, metalness: 0.0 });
+        const stemMat = new THREE.MeshStandardMaterial({ color: config.colors.stem, roughness: 0.8, metalness: 0.0 });
         const scale = [0, 0.15, 0.4, 0.7, 1.0][stage] || 1.0;
 
         if (stage <= 1) { this.buildSeedling(group, config, scale * 1.5); return; }
@@ -550,10 +550,10 @@ const PlantBuilder = {
 
     // 向日葵
     buildSunflower(group, config, stage) {
-        const leafMat = new THREE.MeshLambertMaterial({ color: config.colors.leaf });
-        const stemMat = new THREE.MeshLambertMaterial({ color: config.colors.stem });
-        const petalMat = new THREE.MeshLambertMaterial({ color: config.colors.petal });
-        const centerMat = new THREE.MeshLambertMaterial({ color: config.colors.center });
+        const leafMat = new THREE.MeshStandardMaterial({ color: config.colors.leaf, roughness: 0.8, metalness: 0.0 });
+        const stemMat = new THREE.MeshStandardMaterial({ color: config.colors.stem, roughness: 0.8, metalness: 0.0 });
+        const petalMat = new THREE.MeshStandardMaterial({ color: config.colors.petal, roughness: 0.8, metalness: 0.0 });
+        const centerMat = new THREE.MeshStandardMaterial({ color: config.colors.center, roughness: 0.8, metalness: 0.0 });
         const scale = [0, 0.15, 0.4, 0.7, 1.0][stage] || 1.0;
 
         if (stage <= 1) { this.buildSeedling(group, config, scale * 1.5); return; }
@@ -594,7 +594,7 @@ const PlantBuilder = {
                 const sa = s * 2.4;
                 const sr = Math.sqrt(s / 20) * 0.22 * scale;
                 const sGeo = new THREE.SphereGeometry(0.025 * scale, 4, 4);
-                const seed = new THREE.Mesh(sGeo, new THREE.MeshLambertMaterial({ color: 0x5C3317 }));
+                const seed = new THREE.Mesh(sGeo, new THREE.MeshStandardMaterial({ color: 0x5C3317, roughness: 0.8, metalness: 0.0 }));
                 seed.position.set(Math.cos(sa) * sr, 0.04 * scale, Math.sin(sa) * sr);
                 flowerGroup.add(seed);
             }
@@ -619,9 +619,9 @@ const PlantBuilder = {
 
     // 金苹果树
     buildGoldApple(group, config, stage) {
-        const leafMat = new THREE.MeshLambertMaterial({ color: config.colors.leaf });
-        const trunkMat = new THREE.MeshLambertMaterial({ color: config.colors.trunk });
-        const fruitMat = new THREE.MeshLambertMaterial({ color: config.colors.fruit });
+        const leafMat = new THREE.MeshStandardMaterial({ color: config.colors.leaf, roughness: 0.8, metalness: 0.0 });
+        const trunkMat = new THREE.MeshStandardMaterial({ color: config.colors.trunk, roughness: 0.8, metalness: 0.0 });
+        const fruitMat = new THREE.MeshStandardMaterial({ color: config.colors.fruit, roughness: 0.8, metalness: 0.0 });
         const scale = [0, 0.15, 0.4, 0.7, 1.0][stage] || 1.0;
 
         if (stage <= 1) { this.buildSeedling(group, config, scale * 1.5); return; }
@@ -685,10 +685,10 @@ const PlantBuilder = {
 
     // 彩虹玫瑰
     buildRainbowRose(group, config, stage) {
-        const leafMat = new THREE.MeshLambertMaterial({ color: config.colors.leaf });
-        const stemMat = new THREE.MeshLambertMaterial({ color: config.colors.stem });
-        const petalMat = new THREE.MeshLambertMaterial({ color: config.colors.petal });
-        const thornMat = new THREE.MeshLambertMaterial({ color: config.colors.thorn });
+        const leafMat = new THREE.MeshStandardMaterial({ color: config.colors.leaf, roughness: 0.8, metalness: 0.0 });
+        const stemMat = new THREE.MeshStandardMaterial({ color: config.colors.stem, roughness: 0.8, metalness: 0.0 });
+        const petalMat = new THREE.MeshStandardMaterial({ color: config.colors.petal, roughness: 0.8, metalness: 0.0 });
+        const thornMat = new THREE.MeshStandardMaterial({ color: config.colors.thorn, roughness: 0.8, metalness: 0.0 });
         const scale = [0, 0.15, 0.4, 0.7, 1.0][stage] || 1.0;
 
         if (stage <= 1) { this.buildSeedling(group, config, scale * 1.5); return; }
@@ -734,7 +734,7 @@ const PlantBuilder = {
                 const petalCount = 5 + layer;
                 const r = (0.05 + layer * 0.07) * scale;
                 const layerColor = layerColors[layer] || config.colors.petal;
-                const lMat = new THREE.MeshLambertMaterial({ color: layerColor });
+                const lMat = new THREE.MeshStandardMaterial({ color: layerColor, roughness: 0.8, metalness: 0.0 });
                 for (let p = 0; p < petalCount; p++) {
                     const pa = (p / petalCount) * Math.PI * 2 + layer * 0.3;
                     const pGeo = new THREE.SphereGeometry(0.08 * scale, 5, 4);
